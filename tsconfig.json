@@ -1,0 +1,54 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "target": "es2017",
+        "declaration": true,
+        "outDir": "tmp",
+        "jsx": "react",
+        "lib": [
+            "dom",
+            "es2017"
+        ],
+        "types": [
+        ],
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitUseStrict": false,
+        "sourceMap": false,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "forceConsistentCasingInFileNames": true,
+        "traceResolution": false,
+        "listFiles": false,
+        "stripInternal": true,
+        "skipDefaultLibCheck": true,
+        "skipLibCheck": false,
+        "pretty": false,
+        "noEmitOnError": true
+    },
+    "include": [
+        "scripts/**/*.ts",
+        "scripts/**/*.tsx"
+    ],
+    "exclude": [
+        "node_modules",
+        "scripts/definition-file/usage/",
+        "scripts/definition-file/augmentGlobal/",
+        "scripts/definition-file/issue9831/",
+        "scripts/**/*-invalid.ts",
+        "scripts/**/*-invalid.d.ts",
+        "scripts/**/invalid.ts",
+        "scripts/**/invalid.d.ts",
+        "scripts/**/*-ignore.ts",
+        "scripts/**/*-ignore.d.ts",
+        "scripts/**/ignore.ts",
+        "scripts/**/ignore.d.ts"
+    ]
+}
+

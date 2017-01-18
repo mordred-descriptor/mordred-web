@@ -1,0 +1,46 @@
+{
+  "name": "mordred-web",
+  "version": "0.1.0",
+  "description": "mordred web interface",
+  "main": "index.js",
+  "repository": "https://github.com/mordred-descriptor/mordred-web",
+  "author": "Hirotomo Moriwaki",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "@types/react": "^15.0.0",
+    "@types/react-dom": "^0.14.20",
+    "babel-plugin-transform-inline-environment-variables": "^0.0.2",
+    "babel-preset-es2015-rollup": "^3.0.0",
+    "livereload": "^0.6.0",
+    "node-sass": "^4.3.0",
+    "npm-run-all": "^4.0.1",
+    "pug-cli": "^1.0.0-alpha6",
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2",
+    "rollup": "^0.41.4",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-commonjs": "^7.0.0",
+    "rollup-plugin-node-resolve": "^2.0.0",
+    "rollup-plugin-uglify": "^1.0.1",
+    "rollup-watch": "^3.2.2",
+    "typescript": "^2.1.5"
+  },
+  "scripts": {
+    "build": "run-p build:*",
+    "build:js": "run-s build:js:ts build:js:bundle",
+    "build:js:ts": "tsc",
+    "build:js:bundle": "rollup -c",
+    "build:html": "pug -o dist html",
+    "build:css": "node-sass -o dist style/style.sass",
+    "watch": "run-p watch:*",
+    "watch:js": "run-p watch:js:*",
+    "watch:js:ts": "npm run build:js:ts -- -w",
+    "watch:js:bundle": "npm run build:js:bundle -- -w",
+    "watch:html": "npm run build:html -- -w",
+    "watch:css": "run-s build:css \"build:css -- -w\"",
+    "watch:reload": "livereload dist"
+  },
+  "dependencies": {
+    "normalize.css": "^5.0.0"
+  }
+}
