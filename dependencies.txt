@@ -1,2 +1,5 @@
 tornado
 psutil
+base58
+numpy
+six

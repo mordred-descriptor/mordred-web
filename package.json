@@ -66,6 +66,8 @@
     "watch:sass": "auto-reload-server -i -w sass -j package.json:.scripts.build:sass",
     "server": "auto-reload-server -i -w ./python/mordred_web -x static -c \"PYTHONPATH=python python -m mordred_web $npm_package_config_port\"",
     "browser-sync": "browser-sync start --proxy localhost:$npm_package_config_port --files $npm_package_config_static --port $npm_package_config_devport",
-    "clean": "rimraf tmp $npm_package_config_static"
+    "clean": "rimraf tmp $npm_package_config_static",
+    "copy": "cpx \"$npm_package_config_static/**\" static",
+    "production": "NODE_ENV=production run-s build copy"
   }
 }

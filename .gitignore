@@ -6,3 +6,4 @@ tmp
 *.egg-info
 *.pyc
 python/mordred_web/static
+static
