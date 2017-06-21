@@ -1,0 +1,237 @@
+@import '../node_modules/spectre.css/dist/spectre';
+@import '../node_modules/react-virtualized/styles';
+
+$fa-font-path: "/static/fonts";
+@import '../node_modules/font-awesome/scss/font-awesome';
+
+@mixin mobile {
+    @media screen and (max-width: 600px) {
+        @content;
+    }
+}
+
+@mixin tablet {
+    @media screen and (min-width: 600px) and (max-width: 960px) {
+        @content;
+    }
+}
+
+@mixin desktop {
+    @media screen and (min-width: 960px) and (max-width: 1280px) {
+        @content;
+    }
+}
+
+@mixin large-desktop {
+    @media screen and (min-width: 1280px) {
+        @content;
+    }
+}
+
+footer {
+    margin-top: 10rem;
+    text-align: center;
+    color: #acb3c2;
+}
+
+.table {
+    text-align: center;
+
+    .ReactVirtualized__Table__headerRow, .ReactVirtualized__Table__Grid {
+        border-bottom: .1rem solid #727e96;
+    }
+
+    .ReactVirtualized__Table__headerRow {
+        @include mobile {
+            font-size: 1.2rem;
+        }
+    }
+
+    .ReactVirtualized__Table__row {
+        border-bottom: .1rem solid #f0f1f4;
+    }
+
+    .data-NA, .data-zero {
+        color: #acb3c2;
+    }
+
+    .sort-placeholder {
+        color: #e7e9ed;
+    }
+}
+
+.page {
+    @include tablet {
+        max-width: 600px;
+    }
+
+    @include desktop {
+        max-width: 800px;
+    }
+
+    @include large-desktop {
+        max-width: 1100px;
+    }
+}
+
+.upload-page {
+    .empty {
+        background-color: transparent;
+        padding-top: 10rem;
+
+        @media screen and (max-width: 400px) {
+            .empty-title {
+                font-size: 10vw;
+            }
+        }
+
+        .upload-button-container {
+            margin: 6rem 0 3rem 0;
+        }
+    }
+}
+
+.file-page {
+    padding: 0 2rem;
+}
+
+.top-bar {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .filename {
+        display: flex;
+        align-items: center;
+
+        h2 {
+            margin: 0 1rem;
+        }
+    }
+    margin-bottom: 3rem;
+}
+
+.mol-view-container {
+    margin: 2rem 0;
+
+    .mol-name {
+        height: 3rem;
+
+        .forcefield {
+            font-size: 1.3rem;
+        }
+    }
+
+    .mol-view {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: center;
+
+        .mol-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: inherit;
+            width: 3.8rem;
+
+            &.mol-nav-left {
+                margin-right: .2rem;
+            }
+
+            &.mol-nav-right {
+                margin-left: .2rem;
+            }
+        }
+
+        .mol-display-wrapper {
+            position: relative;
+
+            .loading, .failed {
+                position: relative;
+                top: 50%;
+            }
+
+            .mol-display {
+                @include mobile {
+                    width: calc(100vw - 8rem);
+                    height: calc(100vw - 8rem);
+                }
+
+                @include tablet {
+                    width: 400px;
+                    height: 400px;
+                }
+
+                @include desktop {
+                    width: 400px;
+                    height: 400px;
+                }
+
+                @include large-desktop {
+                    width: 500px;
+                    height: 500px;
+                }
+            }
+        }
+    }
+
+    .jump-field {
+        margin-top: .5rem;
+    }
+}
+
+    .bar {
+    .bar-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+}
+
+.bar-container {
+    display: flex;
+
+    .name {
+        display: flex;
+        margin-right: .5rem;
+        align-items: center;
+    }
+
+    .bar {
+        height: 2.5rem;
+    }
+}
+
+.progress-page {
+    .container {
+        padding: 1rem 3rem 8rem 3rem;
+        .title {
+            margin-bottom: 5rem;
+        }
+    }
+}
+
+.loading-page {
+    margin-top: 50vh;
+}
+
+.descriptor-modal {
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+    }
+    .modal-body {
+        .form-switch {
+            @include mobile {
+                width: 100%;
+            }
+            width: 50%;
+        }
+    }
+}
+
+.calculate-action {
+    margin-top: 2rem;
+}

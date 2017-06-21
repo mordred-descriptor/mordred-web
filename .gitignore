@@ -1,5 +1,8 @@
-/dist
-/tmp
-/node_modules
-.envrc
-.direnv
+node_modules
+dist
+__pycache__
+tmp
+*.sqlite
+*.egg-info
+*.pyc
+python/mordred_web/static
