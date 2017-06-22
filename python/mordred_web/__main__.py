@@ -32,11 +32,9 @@ def main(port, workers, db='mordred-web.sqlite'):
             (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static}),
             (r'/.*', SingleFileHandler, {'path': os.path.join(static, 'index.html')}),
         ], compress_response=True, static_hash_cache=True)
-        server = tornado.httpserver.HTTPServer(app)
-        server.bind(port)
+        app.listen(port)
         print('start mordred.web on localhost:{}'.format(port))
-        server.start(1)
-        tornado.ioloop.IOLoop.instance().start()
+        tornado.ioloop.IOLoop.current().start()
 
 
 if __name__ == "__main__":
