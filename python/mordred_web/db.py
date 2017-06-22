@@ -110,6 +110,7 @@ def connect(db):
     sqlite3.register_converter("MOL", convert_mol)
 
     with sqlite3.connect(db, **sqlite_args) as conn:
+        conn.text_factory = str
         conn.execute('PRAGMA foreign_keys = ON')
         with transaction(conn) as cur:
             for s in schema:

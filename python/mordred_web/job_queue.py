@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, division
 
 import math
 import pickle
@@ -106,7 +106,7 @@ class JobQueue(object):
 
             b = pickle.dumps(data)
 
-            for i in range(math.ceil(len(b) / chunk_size)):
+            for i in range(int(math.ceil(len(b) / chunk_size))):
                 st = i * chunk_size
                 ed = st + chunk_size
                 result_in.send_bytes(b[st:ed])
