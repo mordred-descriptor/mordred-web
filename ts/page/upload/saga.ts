@@ -17,7 +17,14 @@ function* uploadFile({file}: Action.SetFile): IterableIterator<{}> {
         const id: string = yield call(api.uploadFile, {file, gen3D, desalt});
         yield put(Action.Uploaded(id));
     } catch (e) {
-        yield put(Action.SetError(e.toString()));
+        if (e.response) {
+            const r = e.response;
+            if (r.status && r.statusText) {
+                yield put(Action.SetError(`${r.status} ${r.statusText}`));
+            }
+        } else {
+            yield put(Action.SetError(e.toString()));
+        }
     }
 }
 
