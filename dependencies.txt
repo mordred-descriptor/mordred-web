@@ -1,3 +1,4 @@
+mordred
 tornado
 psutil
 base58
