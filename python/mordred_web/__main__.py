@@ -3,7 +3,7 @@ import os
 import tornado.web
 
 from .db import connect
-from .job_queue import JobQueue
+from .task_queue import TaskQueue
 from .handler.calc import CalcIdHandler, CalcIdExtHandler
 from .handler.file import FileHandler, FileIdHandler, FileIdExtHandler, FileIdNthExtHandler
 from .handler.descriptor import DescriptorHandler
@@ -19,8 +19,9 @@ class MyApplication(tornado.web.Application):
 
 def main(port, workers, db='mordred-web.sqlite'):
     static = os.path.join(os.path.dirname(__file__), 'static')
+    ioloop = tornado.ioloop.IOLoop.current()
 
-    with connect(db) as conn, JobQueue(workers) as queue:
+    with connect(db) as conn, TaskQueue(workers, ioloop) as queue:
         app = MyApplication(queue, conn, [
             (r'/api/descriptor', DescriptorHandler),
             (r'/api/file', FileHandler),
@@ -32,11 +33,9 @@ def main(port, workers, db='mordred-web.sqlite'):
             (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static}),
             (r'/.*', SingleFileHandler, {'path': os.path.join(static, 'index.html')}),
         ], compress_response=True, static_hash_cache=True)
-        server = tornado.httpserver.HTTPServer(app)
-        server.bind(port)
+        app.listen(port)
         print('start mordred.web on localhost:{}'.format(port))
-        server.start(1)
-        tornado.ioloop.IOLoop.instance().start()
+        ioloop.start()
 
 
 if __name__ == "__main__":

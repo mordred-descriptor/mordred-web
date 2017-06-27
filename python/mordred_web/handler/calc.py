@@ -8,10 +8,10 @@ from mordred.error import MissingValueBase
 
 from ..db import transaction, issue_text_id
 from .common import RequestHandler, SSEHandler
-from ..job_queue import Task, Worker, SingleWorker
+from ..task_queue import Task, SingleTask
 
 
-class PrepareTask(Task):
+class PrepareTask(SingleTask):
     def __init__(self, calc_id, total, file_id, disabled, conn):
         self.calc_id = calc_id
         self.file_id = file_id
@@ -19,13 +19,10 @@ class PrepareTask(Task):
         self.conn = conn
         self.total = total
 
-    def worker(self):
-        return PrepareWorker(disabled=self.disabled)
-
-    def on_task_error(e):
+    def on_job_error(e):
         print(e)
 
-    def on_task_end(self, calc):
+    def on_job_end(self, calc):
         self.calc = calc
         self.desc_ids = []
 
@@ -45,8 +42,11 @@ class PrepareTask(Task):
         task.get_mols()
         return task
 
+    def job(self):
+        return PrepareWorker(disabled=self.disabled)
 
-class PrepareWorker(SingleWorker):
+
+class PrepareWorker(object):
     def __init__(self, disabled):
         self.disabled = disabled
 
@@ -85,13 +85,10 @@ class CalcTask(Task):
             )
             self.mols = cur.fetchall()
 
-    def worker(self):
-        return CalcWorker(mols=self.mols, calc=self.calc)
-
-    def on_task_error(self, e):
+    def on_job_error(self, e):
         print(e)
 
-    def on_end(self):
+    def on_task_end(self):
         std = ((None if k == 0 else math.sqrt(S / k)) for S, k in zip(self.S, self.k))
         results = zip(self.desc_ids, self.min, self.max, self.mean, std)
 
@@ -104,7 +101,7 @@ class CalcTask(Task):
 
             cur.execute('UPDATE calc SET done = 1 WHERE id = ?', (self.calc_id,))
 
-    def on_task_end(self, results):
+    def on_job_end(self, results):
         mol_id, results = results
 
         with transaction(self.conn) as cur:
@@ -139,22 +136,22 @@ class CalcTask(Task):
 
             cur.execute('UPDATE calc SET current = current + 1 WHERE id = ?', (self.calc_id,))
 
-
-class CalcWorker(Worker):
-    def __init__(self, mols, calc):
-        self.mols = mols
-        self.calc = calc
-
     def __next__(self):
         if len(self.mols) == 0:
             raise StopIteration
+        (mol_id, mol), self.mols = self.mols[0], self.mols[1:]
+        return CalcWorker(mol, mol_id, self.calc)
 
-        self.mol, self.mols = self.mols[0], self.mols[1:]
+
+class CalcWorker(object):
+    def __init__(self, mol, mol_id, calc):
+        self.mol = mol
+        self.mol_id = mol_id
+        self.calc = calc
 
     def __call__(self):
-        mol_id, mol = self.mol
-        result = self.calc(mol)
-        return mol_id, result
+        result = self.calc(self.mol)
+        return self.mol_id, result
 
 
 class CalcIdHandler(SSEHandler):

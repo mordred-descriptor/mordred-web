@@ -12,7 +12,7 @@ from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule, UFFOptimizeMole
 
 from ..db import issue_text_id, transaction
 from .common import RequestHandler, SSEHandler
-from ..job_queue import SingleWorker, Worker, Task
+from ..task_queue import SingleTask, Task
 
 
 SMI_FIELDS = re.compile(br'^(\S+)\s+(.+)?')
@@ -56,24 +56,7 @@ def read_sdf(bs):
             yield mol, name
 
 
-class ParseWorker(SingleWorker):
-    def __init__(self, body, reader):
-        self.body = body
-        self.reader = reader
-
-    def __call__(self):
-        mols, errors = [], []
-        for mol, name in self.reader(self.body):
-            if not isinstance(mol, Chem.Mol):
-                errors.append(mol)
-                continue
-
-            mols.append((mol, name))
-
-        return mols, errors
-
-
-class ParseTask(Task):
+class ParseTask(SingleTask):
     def __init__(self, text_id, filename, body, gen3D, desalt, conn, reader):
         self.conn = conn
         self.text_id = text_id
@@ -82,12 +65,6 @@ class ParseTask(Task):
         self.gen3D = gen3D
         self.desalt = desalt
         self.reader = reader
-
-    def worker(self):
-        return ParseWorker(
-            body=self.body,
-            reader=self.reader,
-        )
 
     def insert_file(self):
         is3D = self.reader != read_smiles or self.gen3D
@@ -99,7 +76,7 @@ class ParseTask(Task):
             ''', (self.text_id, self.filename, int(time.time()), self.gen3D, is3D, self.desalt))
             self.file_id = cur.lastrowid
 
-    def on_task_end(self, v):
+    def on_job_end(self, v):
         self.mols, errors = v
         with transaction(self.conn) as cur:
             cur.execute(
@@ -121,6 +98,29 @@ class ParseTask(Task):
             conn=self.conn,
         )
 
+    def job(self):
+        return ParseJob(
+            body=self.body,
+            reader=self.reader,
+        )
+
+
+class ParseJob(object):
+    def __init__(self, body, reader):
+        self.body = body
+        self.reader = reader
+
+    def __call__(self):
+        mols, errors = [], []
+        for mol, name in self.reader(self.body):
+            if not isinstance(mol, Chem.Mol):
+                errors.append(mol)
+                continue
+
+            mols.append((mol, name))
+
+        return mols, errors
+
 
 class PrepareTask(Task):
     def __init__(self, file_id, mols, gen3D, desalt, conn):
@@ -131,14 +131,7 @@ class PrepareTask(Task):
         self.conn = conn
         self.i = 0
 
-    def worker(self):
-        return PrepareWorker(
-            mols=self.mols,
-            gen3D=self.gen3D,
-            desalt=self.desalt,
-        )
-
-    def on_task_end(self, result):
+    def on_job_end(self, result):
         uff, mol, name = result
         if self.gen3D:
             ff = "UFF" if uff else "MMFF"
@@ -152,7 +145,7 @@ class PrepareTask(Task):
 
         self.i += 1
 
-    def on_task_error(self, err):
+    def on_job_error(self, err):
         with transaction(self.conn) as cur:
             cur.execute(
                 'UPDATE file SET total = total - 1 WHERE id = ?',
@@ -163,12 +156,19 @@ class PrepareTask(Task):
                 (self.file_id, str(err)),
             )
 
-    def on_end(self):
+    def on_task_end(self):
         with transaction(self.conn) as cur:
             cur.execute(
                 'UPDATE file SET done = ? WHERE id = ?',
                 (True, self.file_id),
             )
+
+    def __next__(self):
+        if len(self.mols) == 0:
+            raise StopIteration
+
+        (mol, name), self.mols = self.mols[0], self.mols[1:]
+        return PrepareJob(mol, name, self.gen3D, self.desalt)
 
 
 def desalt(mol):
@@ -205,28 +205,23 @@ def gen3D(mol):
     return uff, mol
 
 
-class PrepareWorker(Worker):
-    def __init__(self, mols, gen3D, desalt):
-        self.mols = mols
+class PrepareJob(object):
+    def __init__(self, mol, name, gen3D, desalt):
+        self.mol = mol
+        self.name = name
         self.gen3D = gen3D
         self.desalt = desalt
 
-    def __next__(self):
-        if len(self.mols) == 0:
-            raise StopIteration
-
-        self.mol, self.mols = self.mols[0], self.mols[1:]
-
     def __call__(self):
-        mol, name = self.mol
+        mol = self.mol
         if self.desalt:
             mol = desalt(mol)
 
         if self.gen3D:
             uff, mol = gen3D(mol)
-            return uff, mol, name
+            return uff, mol, self.name
         else:
-            return None, mol, name
+            return None, mol, self.name
 
 
 class FileHandler(RequestHandler):
