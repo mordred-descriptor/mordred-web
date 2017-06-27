@@ -4,3 +4,4 @@ psutil
 base58
 numpy
 six
+loky
