@@ -12,7 +12,7 @@ export function UploadView(state: ViewState<UploadState, Action.UploadAction>) {
         <div className="upload-page page centered">
             <div className="empty">
                 <h2 className="empty-title">Mordred Web UI</h2>
-                <p className="empty-subtitle">descriptor calculator</p>
+                <p className="empty-subtitle">Descriptor calculator</p>
                 {!state.error ? null :
                     <div className="toast toast-error">
                         <button
@@ -34,11 +34,11 @@ export function UploadView(state: ViewState<UploadState, Action.UploadAction>) {
                     <Switch
                         checked={state.gen3D}
                         onChange={(v) => state.dispatch(Action.ChangeGenerate3D({enabled: v.target.checked, store: true}))}
-                        >generate 3D conformer</Switch>
+                        >Generate 3D conformer</Switch>
                     <Switch
                         checked={state.desalt}
                         onChange={(v) => state.dispatch(Action.ChangeDesalt({enabled: v.target.checked, store: true}))}
-                        >desalt</Switch>
+                        >Desalt</Switch>
                 </div>
             </div>
             <Footer/>

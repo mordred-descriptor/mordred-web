@@ -49,7 +49,7 @@ class ConfigModalContainerImpl extends React.Component<ConfigModalContainerProps
         return (
             <div className="modal-container">
                 <div className="modal-header">
-                    <div className="modal-title">Descriptor Config</div>
+                    <div className="modal-title">Descriptor config</div>
                     <Switch
                         checked={all}
                         onChange={(v) => state.dispatch(Action.SetAllDescriptorsEnabled(v.target.checked))}
@@ -177,7 +177,7 @@ function MainFileView(state: ViewState<FileState, Action.FileAction>) {
                 </div>
             </div>
             <div className="action text-right calculate-action">
-                <a href="/" className="btn btn-link">back</a>
+                <a href="/" className="btn btn-link">Back</a>
                 <button className="btn btn-primary" onClick={doCalculate}>Calculate</button>
             </div>
 
