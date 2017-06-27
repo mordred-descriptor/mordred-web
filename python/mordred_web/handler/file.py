@@ -117,7 +117,7 @@ class ParseJob(object):
                 errors.append(mol)
                 continue
 
-            mols.append((mol, name))
+            mols.append((mol, name.strip()))
 
         return mols, errors
 
