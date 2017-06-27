@@ -25,6 +25,22 @@ class Task(with_metaclass(ABCMeta, object)):
     def on_job_error(self, e):
         pass
 
+    def next_task(self):
+        return None
+
+
+class SingleTask(Task):
+    @abstractmethod
+    def job(self):
+        raise NotImplementedError
+
+    def __next__(self):
+        if getattr(self, '_already_executed', False):
+            raise StopIteration
+
+        self._already_executed = True
+        return self.job()
+
 
 class TaskWrapper(object):
     def __init__(self, task):
@@ -81,44 +97,47 @@ class Daemon(threading.Thread):
 
 
 class MoveThread(Daemon):
-    def __init__(self, sem, src, dst):
+    def __init__(self, q):
         super(MoveThread, self).__init__()
-        self.sem = sem
-        self.src = src
-        self.dst = dst
+        self.q = q
 
     def _main(self):
-        self.sem.acquire()
-        task = self.src.get()
-        self.dst.put(task)
-        task.raw.on_task_start()
+        self.q._sem.acquire()
+        task = self.q._pendings.get()
+        self.q._workings.put(task)
+
+        self.q._ioloop.add_callback(task.raw.on_task_start)
 
 
 class OnTaskEnd(object):
-    def __init__(self, sem, cnt, task):
-        self.sem = sem
-        self.cnt = cnt
+    def __init__(self, q, task):
+        self.q = q
         self.task = task
 
-    def __call__(self):
-        self.sem.release()
-        self.cnt.decr()
+    def on_task_end(self):
         self.task.raw.on_task_end()
+
+        next_task = self.task.raw.next_task()
+        if next_task is not None:
+            self.q.put(next_task)
+
+        self.q._sem.release()
+        self.q._cnt.decr()
+
+    def __call__(self):
+        self.q._ioloop.add_callback(self.on_task_end)
 
 
 class WorkerThread(Daemon):
-    def __init__(self, sem, workings, pool, cnt):
+    def __init__(self, q):
         super(WorkerThread, self).__init__()
-        self.sem = sem
-        self.workings = workings
-        self.pool = pool
-        self.cnt = cnt
+        self.q = q
 
     def task_end(self, task):
-        return OnTaskEnd(self.sem, self.cnt, task)
+        return OnTaskEnd(self.q, task)
 
     def _main(self):
-        task = self.workings.get()
+        task = self.q._workings.get()
         try:
             job = task.raw.__next__()
         except StopIteration:
@@ -126,34 +145,31 @@ class WorkerThread(Daemon):
             return
 
         task.incr()
-        self.workings.put(task)
-        fut = self.pool.submit(job)
-        task.raw.on_job_start()
+        self.q._workings.put(task)
+        fut = self.q._pool.submit(job)
+        self.q._ioloop.add_callback(task.raw.on_job_start)
 
         try:
             result = fut.result()
-            task.raw.on_job_end(result)
+            self.q._ioloop.add_callback(task.raw.on_job_end, result)
         except Exception as e:
-            task.raw.on_job_error(e)
+            self.q._ioloop.add_callback(task.raw.on_job_error, e)
 
         task.decr(self.task_end(task))
 
 
 class TaskQueue(object):
-    def __init__(self, workers):
+    def __init__(self, workers, ioloop):
         self._exit = threading.Event()
         self._pendings = exitable.ExitableQueue(self._exit)
         self._workings = exitable.ExitableQueue(self._exit, workers)
         self._sem = exitable.ExitableBoundedSemaphore(self._exit, workers)
         self._pool = ProcessPoolExecutor(workers)
         self._cnt = Counter(0)
+        self._ioloop = ioloop
 
-        self._workers = [
-            MoveThread(self._sem, self._pendings, self._workings),
-        ] + [
-            WorkerThread(self._sem, self._workings, self._pool, self._cnt)
-            for _ in range(workers)
-        ]
+        self._workers = [MoveThread(self)]
+        self._workers += [WorkerThread(self) for _ in range(workers)]
 
     def put(self, task):
         self._cnt.incr()
