@@ -124,3 +124,12 @@ export async function getResultInfo(id: string): promise.Promise<ResultInfo> {
     const {data} = await axios.get(`/api/calc/${id}`);
     return data;
 }
+
+export interface AppInfo {
+    file_size_limit: number;
+}
+
+export async function getAppInfo(): promise.Promise<AppInfo> {
+    const {data} = await axios.get("/api/info");
+    return data;
+}

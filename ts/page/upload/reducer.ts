@@ -27,6 +27,10 @@ export function uploadReducer(state: UploadState = initUpload, action: UploadAct
             update = {error: action.error};
             break;
 
+        case Action.SET_FILE_SIZE_LIMIT:
+            update = {file_size_limit: action.limit};
+            break;
+
         default:
             exhaustiveCheck(action);
             return state;

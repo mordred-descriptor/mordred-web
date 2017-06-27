@@ -15,6 +15,7 @@ from .common import RequestHandler, SSEHandler
 from ..task_queue import SingleTask, Task
 
 
+MEGA = 1024 * 1024
 SMI_FIELDS = re.compile(br'^(\S+)\s+(.+)?')
 
 
@@ -237,6 +238,11 @@ class FileHandler(RequestHandler):
             self.fail(400, "no file parameter")
 
         f = f[0]
+        limit_mb = self.application.limit
+        limit_b = limit_mb * MEGA
+        if len(f.body) > limit_b:
+            self.fail(400, "file size too large (> {}MB)".format(limit_mb))
+
         ext = os.path.splitext(f.filename)[-1]
 
         if ext in self.SMI_EXT:

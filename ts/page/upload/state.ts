@@ -3,6 +3,8 @@ export interface UploadState {
     gen3D: boolean;
     desalt: boolean;
     error: string|null;
+
+    file_size_limit: number;
 }
 
 export const initUpload: UploadState =  {
@@ -10,4 +12,6 @@ export const initUpload: UploadState =  {
     gen3D: false,
     desalt: true,
     error: null,
+
+    file_size_limit: 0,
 };

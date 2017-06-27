@@ -54,12 +54,24 @@ export function SetError(error: string|null): SetError {
     return {type: SET_ERROR, error};
 }
 
+export const SET_FILE_SIZE_LIMIT = "UPLOAD:SET_FILE_SIZE_LIMIT";
+
+export interface SetFileSizeLimit {
+    type: typeof SET_FILE_SIZE_LIMIT;
+    limit: number;
+}
+
+export function SetFileSizeLimit(limit: number): SetFileSizeLimit {
+    return {type: SET_FILE_SIZE_LIMIT, limit};
+}
+
 export type UploadAction
     = ChangeGenerate3D
     | ChangeDesalt
     | SetFile
     | Uploaded
-    | SetError;
+    | SetError
+    | SetFileSizeLimit;
 
 export function isUploadAction(act: {type: string}): act is UploadAction {
     return /^UPLOAD:/.test(act.type);
