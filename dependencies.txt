@@ -5,3 +5,4 @@ base58
 numpy
 six
 loky
+Pillow

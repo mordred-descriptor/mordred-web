@@ -34,6 +34,7 @@ setup(
         'numpy>=1.10',
         'six>=1.10',
         'loky>=1.0',
+        'Pillow>=4.1'
     ],
 
 )
