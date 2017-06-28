@@ -17,7 +17,7 @@ export function* resultSaga(): IterableIterator<{}> {
         const chan = yield call(api.calcChannel, id);
 
         while (true) {
-            const data: api.FileChannelMessage = yield take(chan);
+            const data: api.CalcChannelMessage = yield take(chan);
             if (data.error) {
                 yield put(Action.NotFound());
                 break;

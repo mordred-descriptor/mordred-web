@@ -1,6 +1,7 @@
 import * as objectAssign from "object-assign";
 
 import {DescriptorInfo} from "../../api";
+import deleteIndex from "../../util/deleteIndex";
 import exhaustiveCheck from "../../util/exhaustiveCheck";
 import * as Action from "./action";
 import {initResult, ResultState} from "./state";
@@ -32,6 +33,7 @@ export function resultReducer(state: ResultState = initResult, action: Action.Re
                 descriptorInfo: action.descriptors.map((d, i) => {
                     return {...d, index: i};
                 }),
+                errors: action.errors,
             };
             break;
 
@@ -64,6 +66,10 @@ export function resultReducer(state: ResultState = initResult, action: Action.Re
                 sortDirection: action.sortDirection,
                 descriptorInfo: newDI,
             };
+            break;
+
+        case Action.CLOSE_ERROR:
+            update = {errors: deleteIndex<ResultState["errors"][0]>(state.errors, action.index)};
             break;
 
         default:

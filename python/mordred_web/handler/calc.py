@@ -12,17 +12,26 @@ from ..task_queue import Task, SingleTask
 
 
 class PrepareTask(SingleTask):
-    def __init__(self, calc_id, total, file_id, disabled, conn):
+    timeout = 60
+
+    def __init__(self, calc_id, total, file_id, disabled, conn, calc_timeout):
         self.calc_id = calc_id
         self.file_id = file_id
         self.disabled = disabled
         self.conn = conn
         self.total = total
+        self.calc_timeout = calc_timeout
+        self.error = False
 
-    def on_job_error(e):
-        print(e)
+    def on_job_error(self, job, e):
+        with transaction(self.conn) as cur:
+            cur.execute(
+                'INSERT INTO calc_error (calc_id, error) VALUES (?, ?)',
+                (self.calc_id, 'BUG: calculator prepare failed: {!r}'.format(e))
+            )
+        self.error = True
 
-    def on_job_end(self, calc):
+    def on_job_end(self, job, calc):
         self.calc = calc
         self.desc_ids = []
 
@@ -35,9 +44,13 @@ class PrepareTask(SingleTask):
                 self.desc_ids.append(cur.lastrowid)
 
     def next_task(self):
+        if self.error:
+            return
+
         task = CalcTask(
             file_id=self.file_id, calc_id=self.calc_id, desc_ids=self.desc_ids,
-            total=self.total, calc=self.calc, conn=self.conn
+            total=self.total, calc=self.calc, conn=self.conn,
+            timeout=self.calc_timeout,
         )
         task.get_mols()
         return task
@@ -61,13 +74,14 @@ class PrepareWorker(object):
 
 
 class CalcTask(Task):
-    def __init__(self, file_id, calc_id, desc_ids, calc, total, conn):
+    def __init__(self, file_id, calc_id, desc_ids, calc, total, conn, timeout):
         self.file_id = file_id
         self.calc_id = calc_id
         self.desc_ids = desc_ids
         self.calc = calc
         self.conn = conn
         self.total = total
+        self.timeout = timeout
 
         Nd = len(desc_ids)
         self.max = [None] * Nd
@@ -85,8 +99,16 @@ class CalcTask(Task):
             )
             self.mols = cur.fetchall()
 
-    def on_job_error(self, e):
-        print(e)
+    def on_job_error(self, job, e):
+        se = str(e)
+        if len(se) == 0:
+            se = repr(e)
+
+        with transaction(self.conn) as cur:
+            cur.execute(
+                'INSERT INTO calc_error (calc_id, molecule_id, error) VALUES (?, ?, ?)',
+                (self.calc_id, job.mol_id, se)
+            )
 
     def on_task_end(self):
         std = ((None if k == 0 else math.sqrt(S / k)) for S, k in zip(self.S, self.k))
@@ -101,8 +123,7 @@ class CalcTask(Task):
 
             cur.execute('UPDATE calc SET done = 1 WHERE id = ?', (self.calc_id,))
 
-    def on_job_end(self, results):
-        mol_id, results = results
+    def on_job_end(self, job, results):
 
         with transaction(self.conn) as cur:
             for i, (desc_id, result) in enumerate(zip(self.desc_ids, results)):
@@ -115,7 +136,7 @@ class CalcTask(Task):
                 cur.execute('''
                     INSERT INTO result (calc_id, molecule_id, descriptor_id, value, error)
                     VALUES (?, ?, ?, ?, ?)
-                    ''', (self.calc_id, mol_id, desc_id, value, error))
+                    ''', (self.calc_id, job.mol_id, desc_id, value, error))
 
                 if error:
                     continue
@@ -150,8 +171,7 @@ class CalcWorker(object):
         self.calc = calc
 
     def __call__(self):
-        result = self.calc(self.mol)
-        return self.mol_id, result
+        return self.calc(self.mol)
 
 
 class CalcIdHandler(SSEHandler):
@@ -177,7 +197,9 @@ class CalcIdHandler(SSEHandler):
 
         disabled = set(self.get_arguments("disabled"))
         task = PrepareTask(
-            calc_id=calc_id, file_id=file_id, total=total, disabled=disabled, conn=self.db
+            calc_id=calc_id, file_id=file_id,
+            total=total, disabled=disabled, conn=self.db,
+            calc_timeout=self.application.calc_timeout,
         )
         self.put(task)
 
@@ -237,6 +259,19 @@ class CalcIdHandler(SSEHandler):
                 self.fail(404, "no id")
 
             cur.execute('''
+                SELECT molecule.nth, molecule.name, calc_error.error
+                FROM calc_error LEFT OUTER JOIN molecule
+                    ON calc_error.molecule_id = molecule.id
+                WHERE calc_error.calc_id = ?
+                ORDER BY molecule.nth
+            ''', (self.calc_id,))
+
+            errors = [
+                {"nth": nth, "name": name, "error": error}
+                for nth, name, error in cur.fetchall()
+            ]
+
+            cur.execute('''
                 SELECT name, max, min, mean, std
                 FROM descriptor
                 WHERE calc_id = ?
@@ -253,6 +288,7 @@ class CalcIdHandler(SSEHandler):
             self.json(
                 file_name=file_name,
                 file_id=file_text_id,
+                errors=errors,
                 descriptors=descs,
             )
 

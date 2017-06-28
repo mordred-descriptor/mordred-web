@@ -1,6 +1,7 @@
 import uuid
 import sqlite3
 from contextlib import closing, contextmanager
+from enum import Enum
 
 import base58
 from rdkit import Chem
@@ -22,6 +23,13 @@ def transaction(conn):
         conn.commit()
 
 
+class Phase(Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in-progress"
+    DONE = "done"
+    ERROR = "error"
+
+
 schema = [
     '''
     CREATE TABLE IF NOT EXISTS file (
@@ -33,7 +41,7 @@ schema = [
         gen3D      INTEGER NOT NULL,
         is3D       INTEGER NOT NULL,
         total      INTEGER,
-        done       INTEGER NOT NULL
+        phase      TEXT    NOT NULL
     )
     ''', '''
     CREATE INDEX IF NOT EXISTS file__text_id ON file(text_id)
@@ -87,7 +95,15 @@ schema = [
         error   TEXT,
         UNIQUE (calc_id, molecule_id, descriptor_id)
     )
-    ''' # noqa
+    ''',  # noqa: E501
+    '''
+    CREATE TABLE IF NOT EXISTS calc_error (
+        id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        calc_id     INTEGER NOT NULL REFERENCES calc(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        molecule_id INTEGER REFERENCES molecule(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        error       TEXT NOT NULL
+    )
+    '''
 ]
 
 

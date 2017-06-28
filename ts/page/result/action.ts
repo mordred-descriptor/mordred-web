@@ -62,13 +62,25 @@ export function ChangeSort(v: {sortBy: "index"|"min"|"max"|"mean"|"std", sortDir
     return {type: CHANGE_SORT, sortBy: v.sortBy, sortDirection: v.sortDirection};
 }
 
+export const CLOSE_ERROR = "RESULT:CLOSE_ERROR";
+
+export interface CloseError {
+    type: typeof CLOSE_ERROR;
+    index: number;
+}
+
+export function CloseError(index: number): CloseError {
+    return {type: CLOSE_ERROR, index};
+}
+
 export type ResultAction
     = SetID
     | NotFound
     | UpdateState
     | SetResultInfo
     | SetDownloadShown
-    | ChangeSort;
+    | ChangeSort
+    | CloseError;
 
 export function isResultAction(act: {type: string}): act is ResultAction {
     return /^RESULT:/.test(act.type);

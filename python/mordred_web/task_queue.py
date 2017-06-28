@@ -16,17 +16,19 @@ class Task(with_metaclass(ABCMeta, object)):
     def on_task_end(self):
         pass
 
-    def on_job_start(self):
+    def on_job_start(self, job):
         pass
 
-    def on_job_end(self, v):
+    def on_job_end(self, job, v):
         pass
 
-    def on_job_error(self, e):
+    def on_job_error(self, job, e):
         pass
 
     def next_task(self):
         return None
+
+    timeout = None
 
 
 class SingleTask(Task):
@@ -114,7 +116,7 @@ class OnTaskEnd(object):
         self.q = q
         self.task = task
 
-    def on_task_end(self):
+    def task_end_callback(self):
         self.task.raw.on_task_end()
 
         next_task = self.task.raw.next_task()
@@ -125,7 +127,7 @@ class OnTaskEnd(object):
         self.q._cnt.decr()
 
     def __call__(self):
-        self.q._ioloop.add_callback(self.on_task_end)
+        self.q._ioloop.add_callback(self.task_end_callback)
 
 
 class WorkerThread(Daemon):
@@ -147,13 +149,13 @@ class WorkerThread(Daemon):
         task.incr()
         self.q._workings.put(task)
         fut = self.q._pool.submit(job)
-        self.q._ioloop.add_callback(task.raw.on_job_start)
+        self.q._ioloop.add_callback(task.raw.on_job_start, job)
 
         try:
-            result = fut.result()
-            self.q._ioloop.add_callback(task.raw.on_job_end, result)
+            result = fut.result(timeout=task.raw.timeout)
+            self.q._ioloop.add_callback(task.raw.on_job_end, job, result)
         except Exception as e:
-            self.q._ioloop.add_callback(task.raw.on_job_error, e)
+            self.q._ioloop.add_callback(task.raw.on_job_error, job, e)
 
         task.decr(self.task_end(task))
 
@@ -220,13 +222,13 @@ class TestTask(Task):
     def on_task_end(self):
         print('task end')
 
-    def on_job_start(self):
+    def on_job_start(self, job):
         print('job start')
 
-    def on_job_end(self, v):
+    def on_job_end(self, job, v):
         print('job end', v)
 
-    def on_job_error(self, e):
+    def on_job_error(self, job, e):
         print('job error', e)
 
 

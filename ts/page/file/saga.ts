@@ -56,8 +56,8 @@ function* getDescriptorList(): IterableIterator<{}> {
     }
 }
 
-function* getFileInfo({done}: {done: boolean}): IterableIterator<{}> {
-    if (!done) {
+function* getFileInfo({phase}: {phase: api.Phase}): IterableIterator<{}> {
+    if (phase === api.PHASE_PENDING || phase === api.PHASE_IN_PROGRESS) {
         return;
     }
 
@@ -112,9 +112,9 @@ function* loadDisabledDescriptors(): IterableIterator<{}> {
 export function* fileSaga(): IterableIterator<{}> {
     yield takeLatest<Route.File>(Route.FILE, setId);
     yield takeLatest<Route.File>(Route.FILE, getDescriptorList);
-    yield takeLatest<Action.SetDescriptors>(Action.SET_DESCRIPTORS, loadDisabledDescriptors);
 
     yield takeLatest<Action.SetID>(Action.SET_ID, getProgress);
+    yield takeLatest<Action.SetDescriptors>(Action.SET_DESCRIPTORS, loadDisabledDescriptors);
 
     yield takeLatest<Action.UpdateState>(Action.UPDATE_STATE, getFileInfo);
 
@@ -126,5 +126,5 @@ export function* fileSaga(): IterableIterator<{}> {
     yield takeLatest<Action.SetAllDescriptorsEnabled>(Action.SET_ALL_DESCRIPTORS_ENABLED, storeDisables);
 
     yield takeLatest<Action.SetFileInfo>(Action.SET_FILE_INFO, getMolecule);
-    yield takeLatest<Action.SetCurrentMol>(Action.SetCurrentMol, getMolecule);
+    yield takeLatest<Action.SetCurrentMol>(Action.SET_CURRENT_MOL, getMolecule);
 }
