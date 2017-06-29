@@ -9,7 +9,7 @@ export interface ProgressViewProps extends ProgressBarProps {
 
 export function ProgressView({title, name, text, progress}: ProgressViewProps) {
     return (
-        <div className="progress-page">
+        <div className="progress-page page centered">
             <div className="container">
                 <h1 className="title">{title}</h1>
                 <ProgressBar {...{name, text, progress}}/>
