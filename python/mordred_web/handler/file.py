@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 from rdkit.Chem.rdDistGeom import EmbedMolecule
 from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule, UFFOptimizeMolecule
 
-from ..db import issue_text_id, transaction
+from ..db import issue_text_id, transaction, Phase
 from .common import RequestHandler, SSEHandler
 from ..task_queue import SingleTask, Task
 
@@ -58,7 +58,9 @@ def read_sdf(bs):
 
 
 class ParseTask(SingleTask):
-    def __init__(self, text_id, filename, body, gen3D, desalt, conn, reader):
+    def __init__(self, text_id, filename, body, gen3D, desalt,
+                 conn, reader, parse_timeout, prepare_timeout, molecule_limit):
+
         self.conn = conn
         self.text_id = text_id
         self.filename = filename
@@ -66,18 +68,29 @@ class ParseTask(SingleTask):
         self.gen3D = gen3D
         self.desalt = desalt
         self.reader = reader
+        self.timeout = parse_timeout
+        self.prepare_timeout = prepare_timeout
+        self.molecule_limit = molecule_limit
 
     def insert_file(self):
         is3D = self.reader != read_smiles or self.gen3D
 
         with transaction(self.conn) as cur:
             cur.execute('''
-            INSERT INTO file (text_id, name, created_at, gen3D, is3D, desalt, done)
-            VALUES (?, ?, ?, ?, ?, ?, 0)
-            ''', (self.text_id, self.filename, int(time.time()), self.gen3D, is3D, self.desalt))
+            INSERT INTO file (text_id, name, created_at, gen3D, is3D, desalt, phase)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (self.text_id, self.filename, int(time.time()),
+                  self.gen3D, is3D, self.desalt, Phase.PENDING.value))
             self.file_id = cur.lastrowid
 
-    def on_job_end(self, v):
+    def on_task_start(self):
+        with transaction(self.conn) as cur:
+            cur.execute(
+                'UPDATE file SET phase = ? WHERE id = ?',
+                (Phase.IN_PROGRESS.value, self.file_id),
+            )
+
+    def on_job_end(self, job, v):
         self.mols, errors = v
         with transaction(self.conn) as cur:
             cur.execute(
@@ -90,30 +103,59 @@ class ParseTask(SingleTask):
                 VALUES (?, ?)
                 ''', (self.file_id, str(err)))
 
+    def on_job_error(self, job, e):
+        se = str(e)
+        if len(se) == 0:
+            se = repr(e)
+
+        with transaction(self.conn) as cur:
+            cur.execute(
+                'UPDATE file SET phase = ?, total = 0 WHERE id = ?',
+                (Phase.ERROR.value, self.file_id,)
+            )
+
+            cur.execute(
+                'INSERT INTO file_error (file_id, error) VALUES (?, ?)',
+                (self.file_id, 'parse error: {}'.format(se)),
+            )
+
     def next_task(self):
+        if not hasattr(self, 'mols'):
+            return
+
         return PrepareTask(
             file_id=self.file_id,
             mols=self.mols,
             gen3D=self.gen3D,
             desalt=self.desalt,
             conn=self.conn,
+            timeout=self.prepare_timeout,
         )
 
     def job(self):
         return ParseJob(
             body=self.body,
             reader=self.reader,
+            molecule_limit=self.molecule_limit,
         )
 
 
 class ParseJob(object):
-    def __init__(self, body, reader):
+    def __init__(self, body, reader, molecule_limit):
         self.body = body
         self.reader = reader
+        self.molecule_limit = molecule_limit
 
     def __call__(self):
         mols, errors = [], []
-        for mol, name in self.reader(self.body):
+        for i, (mol, name) in enumerate(self.reader(self.body)):
+            if self.molecule_limit is not None and i >= self.molecule_limit:
+                errors.append(
+                    'number of molecule limit: using first {} molecules'.format(
+                        self.molecule_limit
+                    ))
+                break
+
             if not isinstance(mol, Chem.Mol):
                 errors.append(mol)
                 continue
@@ -124,15 +166,16 @@ class ParseJob(object):
 
 
 class PrepareTask(Task):
-    def __init__(self, file_id, mols, gen3D, desalt, conn):
+    def __init__(self, file_id, mols, gen3D, desalt, conn, timeout):
         self.file_id = file_id
         self.mols = mols
         self.gen3D = gen3D
         self.desalt = desalt
         self.conn = conn
         self.i = 0
+        self.timeout = timeout
 
-    def on_job_end(self, result):
+    def on_job_end(self, job, result):
         uff, mol, name = result
         if self.gen3D:
             ff = "UFF" if uff else "MMFF"
@@ -146,7 +189,11 @@ class PrepareTask(Task):
 
         self.i += 1
 
-    def on_job_error(self, err):
+    def on_job_error(self, job, err):
+        se = str(err)
+        if len(se) == 0:
+            se = repr(err)
+
         with transaction(self.conn) as cur:
             cur.execute(
                 'UPDATE file SET total = total - 1 WHERE id = ?',
@@ -154,14 +201,14 @@ class PrepareTask(Task):
             )
             cur.execute(
                 'INSERT INTO file_error (file_id, error) VALUES (?, ?)',
-                (self.file_id, str(err)),
+                (self.file_id, '{}: prepare: {}'.format(job.name, se)),
             )
 
     def on_task_end(self):
         with transaction(self.conn) as cur:
             cur.execute(
-                'UPDATE file SET done = ? WHERE id = ?',
-                (True, self.file_id),
+                'UPDATE file SET phase = ? WHERE id = ?',
+                (Phase.DONE.value, self.file_id),
             )
 
     def __next__(self):
@@ -238,7 +285,7 @@ class FileHandler(RequestHandler):
             self.fail(400, "no file parameter")
 
         f = f[0]
-        limit_mb = self.application.limit
+        limit_mb = self.application.file_size_limit
         limit_b = limit_mb * MEGA
         if len(f.body) > limit_b:
             self.fail(400, "file size too large (> {}MB)".format(limit_mb))
@@ -261,6 +308,9 @@ class FileHandler(RequestHandler):
             desalt=desalt,
             conn=self.db,
             reader=reader,
+            parse_timeout=self.application.parse_timeout,
+            prepare_timeout=self.application.prepare_timeout,
+            molecule_limit=self.application.molecule_limit,
         )
         task.insert_file()
         self.put(task)
@@ -293,26 +343,26 @@ class FileIdHandler(SSEHandler):
         while True:
             with self.transaction() as cur:
                 cur.execute('''
-                SELECT total, done, count(molecule.file_id)
-                FROM file JOIN molecule ON file.id = molecule.file_id
+                SELECT total, phase, count(molecule.file_id)
+                FROM file LEFT OUTER JOIN molecule ON file.id = molecule.file_id
                 WHERE file.id = ?
                 LIMIT 1
                 ''', (self.file_id,))
 
-                total, done, current = cur.fetchone()
+                total, phase, current = cur.fetchone()
 
-            yield self.publish(total=total, name=self.filename, done=bool(done), current=current)
-            if done:
+            yield self.publish(total=total, name=self.filename, phase=phase, current=current)
+            if phase == Phase.ERROR.value or phase == Phase.DONE.value:
                 raise web.Finish
             yield gen.sleep(0.5)
 
     def get_json(self, id):
         with self.transaction() as cur:
             cur.execute(
-                'SELECT name, gen3D, is3D, desalt FROM file WHERE id = ? LIMIT 1',
+                'SELECT name, gen3D, is3D, desalt, phase FROM file WHERE id = ? LIMIT 1',
                 (self.file_id,),
             )
-            name, gen3D, is3D, desalt = cur.fetchone()
+            name, gen3D, is3D, desalt, phase = cur.fetchone()
 
             cur.execute(
                 'SELECT name, forcefield FROM molecule WHERE file_id = ?',
@@ -333,6 +383,7 @@ class FileIdHandler(SSEHandler):
             is3D=bool(is3D),
             mols=mols,
             errors=errors,
+            phase=phase,
         )
 
 

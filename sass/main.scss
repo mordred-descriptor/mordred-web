@@ -91,17 +91,13 @@ footer {
     }
 }
 
-.file-page {
-    padding: 0 2rem;
-}
-
 .top-bar {
     margin-top: 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    .filename {
+    & > div {
         display: flex;
         align-items: center;
 
@@ -109,6 +105,7 @@ footer {
             margin: 0 1rem;
         }
     }
+
     margin-bottom: 3rem;
 }
 
@@ -234,4 +231,8 @@ footer {
 
 .calculate-action {
     margin-top: 2rem;
+}
+
+.result-table-caption {
+    margin: 1.5rem 0 0 0;
 }

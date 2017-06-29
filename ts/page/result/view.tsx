@@ -10,7 +10,9 @@ import {ResultState} from "./state";
 import * as api from "../../api";
 import * as Route from "../../route";
 import {ViewState} from "../../util/dispatch";
+import {BackButton, HomeButton} from "../../view/button";
 import {Dropdown} from "../../view/dropdown";
+import {ErrorView} from "../../view/error-view";
 import {Footer} from "../../view/footer";
 import {LoadingView} from "../../view/loading-page";
 import {ProgressView} from "../../view/progress-page";
@@ -129,7 +131,7 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
     return (
         <div className="result-page page centered">
             <div className="top-bar">
-                <div className="filename">
+                <div>
                     <h2>{state.name}</h2>
                     <DownloadDropdown
                         active={state.downloadShown}
@@ -138,9 +140,28 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
                         csvUrl={`/api/calc/${state.id}.csv`}/>
                 </div>
 
-                <a href={`/file/${state.file_id}`} className="btn btn-link">Back</a>
+                <div>
+                    <BackButton onClick={() => state.dispatch(Route.ChangeLocation(Route.File(state.file_id)))}/>
+                    <HomeButton onClick={() => state.dispatch(Route.ChangeLocation(Route.Upload()))}/>
+                </div>
             </div>
 
+            {
+                state.errors.map(({name, nth, error}, i) => {
+                    const body = nth === null ? error : `${nth + 1}: ${name}: ${error}`;
+
+                    return (
+                        <div key={i} className="toast toast-error">
+                            {body}
+                            <button
+                                onClick={() => state.dispatch(Action.CloseError(i))}
+                                className="btn btn-clear float-right"/>
+                        </div>
+                    );
+                })
+            }
+
+            <h5 className="result-table-caption">Summary</h5>
             <AutoSizer disableHeight>{({width}) => (
                 <Table
                     className="table"
@@ -169,17 +190,18 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
 }
 
 export function ResultView(state: ViewState<ResultState, Action.ResultAction>) {
-    if (state.notFound) {
-        return (
-            <div className="file-page page centered">
-                <h2>ID not found</h2>
-                <p>{state.id}</p>
-            </div>
-        );
-    }
-
     if (state.id === null) {
         return <LoadingView/>;
+    }
+
+    if (state.notFound) {
+        return (
+            <ErrorView
+                title="File ID not found"
+                onClickBack={() => state.dispatch(Route.ChangeLocation(Route.File(state.file_id)))}>
+                {state.id}
+            </ErrorView>
+        );
     }
 
     if (!state.done) {

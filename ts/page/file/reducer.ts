@@ -9,14 +9,14 @@ export function fileReducer(state: FileState = initFile, action: Action.FileActi
     let update: Partial<FileState> = {};
     switch (action.type) {
         case Action.SET_ID:
-            update = {id: action.id};
+            update = {id: action.id, phase: null};
             break;
 
         case Action.UPDATE_STATE:
             update = {
                 total: action.total,
-                current: action.current,
-                done: action.done,
+                progress: action.current,
+                phase: action.phase,
                 name: action.name,
             };
             break;
@@ -58,7 +58,6 @@ export function fileReducer(state: FileState = initFile, action: Action.FileActi
                 gen3D: action.gen3D,
                 mols: action.mols,
                 is3D: action.is3D,
-                current: 0,
             };
             break;
 
@@ -77,7 +76,7 @@ export function fileReducer(state: FileState = initFile, action: Action.FileActi
             break;
 
         case Action.NOT_FOUND:
-            update = {notFound: true};
+            update = {phase: "not-found"};
             break;
 
         case Action.DESCRIPTOR_FETCH_FAILED:

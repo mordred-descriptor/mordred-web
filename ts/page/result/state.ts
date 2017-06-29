@@ -16,6 +16,8 @@ export interface ResultState {
 
     downloadShown: boolean;
 
+    errors: api.ResultInfo["errors"];
+
     sortBy: "index"|"min"|"max"|"mean"|"std";
     sortDirection: SortDirectionType;
 }
@@ -34,6 +36,8 @@ export const initResult: ResultState = {
     descriptorInfo: [],
 
     downloadShown: false,
+
+    errors: [],
 
     sortBy: "index",
     sortDirection: "ASC",

@@ -44,9 +44,20 @@ export function makeEventSource<T>(url: string, check: (d: T) => boolean): Chann
     });
 }
 
+export const PHASE_PENDING = "pending";
+export const PHASE_IN_PROGRESS = "in-progress";
+export const PHASE_DONE = "done";
+export const PHASE_ERROR = "error";
+
+export type Phase
+    = typeof PHASE_PENDING
+    | typeof PHASE_IN_PROGRESS
+    | typeof PHASE_DONE
+    | typeof PHASE_ERROR;
+
 export interface FileChannelMessagePayload {
     total: number;
-    done: boolean;
+    phase: Phase;
     current: number;
     name: string;
 }
@@ -54,7 +65,10 @@ export interface FileChannelMessagePayload {
 export type FileChannelMessage = ChannelMessage<FileChannelMessagePayload>;
 
 export function fileChannel(id: string): Channel<FileChannelMessage> {
-    return makeEventSource<FileChannelMessagePayload>(`/api/file/${id}`, (d) => d.done);
+    return makeEventSource<FileChannelMessagePayload>(
+        `/api/file/${id}`,
+        (d) => d.phase === PHASE_DONE || d.phase === PHASE_ERROR,
+    );
 }
 
 export async function getDescriptors(): promise.Promise<string[]> {
@@ -67,6 +81,7 @@ export interface FileInfoResult {
     gen3D: boolean;
     is3D: boolean;
     desalt: boolean;
+    phase: Phase;
     mols: Array<{name: string, forcefield: string}>;
     errors: string[];
 }
@@ -117,6 +132,7 @@ export interface DescriptorInfo {
 export interface ResultInfo {
     file_name: string;
     file_id: string;
+    errors: Array<{nth: number|null, name: string|null, error: string}>;
     descriptors: DescriptorInfo[];
 }
 
