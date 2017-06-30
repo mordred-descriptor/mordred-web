@@ -5,6 +5,7 @@ import socket
 import argparse
 import psutil
 import webbrowser
+from contextlib import closing
 import signal
 
 from .db import connect
@@ -45,15 +46,27 @@ class MyApplication(tornado.web.Application):
         self.calc_timeout = calc_timeout
 
 
+def get_free_address(lower=3000):
+    port = lower
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        for i in range(5000):
+            try:
+                sock.bind(('', port + i))
+            except OSError:
+                pass
+            else:
+                return sock.getsockname()
+
+        raise OSError("no free port")
+
+
 def serve(port, workers, no_browser,
           file_size_limit=3, molecule_limit=50,
           parse_timeout=60, prepare_timeout=60, calc_timeout=60,
           db='mordred-web.sqlite'):
 
     if port is None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('', 0))
-            port = s.getsockname()[1]
+        _, port = get_free_address()
 
     if workers is None:
         workers = psutil.cpu_count(logical=False)
