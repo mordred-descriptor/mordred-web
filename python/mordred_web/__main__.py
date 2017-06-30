@@ -5,6 +5,7 @@ import socket
 import argparse
 import psutil
 import webbrowser
+import signal
 
 from .db import connect
 from .task_queue import TaskQueue
@@ -16,6 +17,17 @@ from .handler.app import AppInfoHandler
 
 
 MEGA = 1024 * 1024
+
+
+class Shutdown(object):
+    def __init__(self, server, ioloop):
+        self.server = server
+        self.ioloop = ioloop
+
+    def __call__(self, sig, frame):
+        print('catch signal: {}'.format(sig))
+        self.server.stop()
+        self.ioloop.stop()
 
 
 class MyApplication(tornado.web.Application):
@@ -73,8 +85,12 @@ def serve(port, workers, no_browser,
         url = "http://127.0.0.1:{}".format(port)
         if not no_browser:
             webbrowser.open(url, autoraise=True)
+
+        signal.signal(signal.SIGTERM, Shutdown(server, ioloop))
+        signal.signal(signal.SIGINT, Shutdown(server, ioloop))
         print('start mordred.web on {}'.format(url))
         ioloop.start()
+        print('terminate...')
 
 
 def main():
