@@ -1,21 +1,25 @@
 import threading
-import queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 
 class Exit(Exception):
     pass
 
 
-class ExitableQueue(queue.Queue):
+class ExitableQueue(object):
     def __init__(self, exit, maxsize=0, poll=0.1):
-        super(ExitableQueue, self).__init__(maxsize)
+        self._q = queue.Queue(maxsize)
         self._exit = exit
         self.poll = poll
 
     def put(self, item):
         while True:
             try:
-                return super(ExitableQueue, self).put(item, timeout=self.poll)
+                return self._q.put(item, timeout=self.poll)
             except queue.Full:
                 if self._exit.is_set():
                     raise Exit
@@ -23,25 +27,28 @@ class ExitableQueue(queue.Queue):
     def get(self):
         while True:
             try:
-                return super(ExitableQueue, self).get(timeout=self.poll)
+                return self._q.get(timeout=self.poll)
             except queue.Empty:
                 if self._exit.is_set():
                     raise Exit
 
     def put_nowait(self):
-        return super(ExitableQueue, self).put(block=False)
+        return self._q.put(block=False)
 
 
-class ExitableBoundedSemaphore(threading.BoundedSemaphore):
+class ExitableBoundedSemaphore(object):
     def __init__(self, exit, value=1, poll=0.1):
-        super(ExitableBoundedSemaphore, self).__init__(value)
+        self._sem = threading.BoundedSemaphore(value)
         self._exit = exit
         self.poll = poll
 
     def acquire(self):
         while True:
-            if super(ExitableBoundedSemaphore, self).acquire(timeout=self.poll):
+            if self._sem.acquire():
                 return
 
             elif self._exit.is_set():
                 raise Exit
+
+    def release(self):
+        return self._sem.release()

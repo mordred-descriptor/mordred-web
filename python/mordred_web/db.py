@@ -1,7 +1,7 @@
 import uuid
 import sqlite3
-from contextlib import closing, contextmanager
 from enum import Enum
+from contextlib import closing, contextmanager
 
 import base58
 from rdkit import Chem
@@ -31,7 +31,7 @@ class Phase(Enum):
 
 
 schema = [
-    '''
+    """
     CREATE TABLE IF NOT EXISTS file (
         id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         text_id    TEXT    NOT NULL,
@@ -43,9 +43,9 @@ schema = [
         total      INTEGER,
         phase      TEXT    NOT NULL
     )
-    ''', '''
+    """, """
     CREATE INDEX IF NOT EXISTS file__text_id ON file(text_id)
-    ''', '''
+    """, """
     CREATE TABLE IF NOT EXISTS molecule (
         id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         file_id    INTEGER NOT NULL REFERENCES file(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -55,15 +55,15 @@ schema = [
         mol        MOL     NOT NULL,
         UNIQUE (file_id, nth)
     )
-    ''', '''
+    """, """
     CREATE INDEX IF NOT EXISTS molecule__file_id ON molecule(file_id)
-    ''', '''
+    """, """
     CREATE TABLE IF NOT EXISTS file_error (
         id      INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         file_id INTEGER NOT NULL REFERENCES file(id) ON DELETE CASCADE ON UPDATE CASCADE,
         error   TEXT    NOT NULL
     )
-    ''', '''
+    """, """
     CREATE TABLE IF NOT EXISTS calc (
         id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         file_id     INTEGER NOT NULL REFERENCES file(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -72,9 +72,9 @@ schema = [
         current     INTEGER NOT NULL,
         created_at  INTEGER NOT NULL
     )
-    ''', '''
+    """, """
     CREATE INDEX IF NOT EXISTS calc__text_id ON calc(text_id)
-    ''', '''
+    """, """
     CREATE TABLE IF NOT EXISTS descriptor (
         id      INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         calc_id INTEGER NOT NULL REFERENCES calc(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -84,9 +84,9 @@ schema = [
         mean    NUMBER,
         std     NUMBER
     )
-    ''', '''
+    """, """
     CREATE INDEX IF NOT EXISTS descriptor__calc_id ON descriptor(calc_id)
-    ''', '''
+    """, """
     CREATE TABLE IF NOT EXISTS result (
         calc_id       INTEGER NOT NULL REFERENCES calc(id) ON DELETE CASCADE ON UPDATE CASCADE,
         molecule_id   INTEGER NOT NULL REFERENCES molecule(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -95,15 +95,15 @@ schema = [
         error   TEXT,
         UNIQUE (calc_id, molecule_id, descriptor_id)
     )
-    ''',  # noqa: E501
-    '''
+    """,  # noqa: E501
+    """
     CREATE TABLE IF NOT EXISTS calc_error (
         id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         calc_id     INTEGER NOT NULL REFERENCES calc(id) ON DELETE CASCADE ON UPDATE CASCADE,
         molecule_id INTEGER REFERENCES molecule(id) ON DELETE CASCADE ON UPDATE CASCADE,
         error       TEXT NOT NULL
     )
-    '''
+    """,
 ]
 
 
@@ -118,8 +118,8 @@ def convert_mol(b):
 @contextmanager
 def connect(db):
     sqlite_args = {
-        'isolation_level': 'DEFERRED',
-        'detect_types': sqlite3.PARSE_DECLTYPES,
+        "detect_types": sqlite3.PARSE_DECLTYPES,
+        "isolation_level": "DEFERRED",
     }
 
     sqlite3.register_adapter(Chem.Mol, adapt_mol)
@@ -127,7 +127,7 @@ def connect(db):
 
     with sqlite3.connect(db, **sqlite_args) as conn:
         conn.text_factory = str
-        conn.execute('PRAGMA foreign_keys = ON')
+        conn.execute("PRAGMA foreign_keys = ON")
         with transaction(conn) as cur:
             for s in schema:
                 cur.execute(s)

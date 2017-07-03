@@ -1,13 +1,13 @@
+import math
 import time
 from cgi import parse_header
-import math
 
 from mordred import Calculator, descriptors
 from tornado import gen, web
 from mordred.error import MissingValueBase
 
 from ..db import transaction, issue_text_id
-from .common import RequestHandler, SSEHandler
+from .common import SSEHandler, RequestHandler
 from ..task_queue import Task, SingleTask
 
 
@@ -26,8 +26,8 @@ class PrepareTask(SingleTask):
     def on_job_error(self, job, e):
         with transaction(self.conn) as cur:
             cur.execute(
-                'INSERT INTO calc_error (calc_id, error) VALUES (?, ?)',
-                (self.calc_id, 'BUG: calculator prepare failed: {!r}'.format(e))
+                "INSERT INTO calc_error (calc_id, error) VALUES (?, ?)",
+                (self.calc_id, "BUG: calculator prepare failed: {!r}".format(e)),
             )
         self.error = True
 
@@ -38,8 +38,8 @@ class PrepareTask(SingleTask):
         with transaction(self.conn) as cur:
             for desc in calc.descriptors:
                 cur.execute(
-                    'INSERT INTO descriptor (calc_id, name) VALUES (?, ?)',
-                    (self.calc_id, str(desc))
+                    "INSERT INTO descriptor (calc_id, name) VALUES (?, ?)",
+                    (self.calc_id, str(desc)),
                 )
                 self.desc_ids.append(cur.lastrowid)
 
@@ -94,8 +94,8 @@ class CalcTask(Task):
     def get_mols(self):
         with transaction(self.conn) as cur:
             cur.execute(
-                'SELECT id, mol FROM molecule WHERE file_id = ?',
-                (self.file_id,)
+                "SELECT id, mol FROM molecule WHERE file_id = ?",
+                (self.file_id,),
             )
             self.mols = cur.fetchall()
 
@@ -106,8 +106,8 @@ class CalcTask(Task):
 
         with transaction(self.conn) as cur:
             cur.execute(
-                'INSERT INTO calc_error (calc_id, molecule_id, error) VALUES (?, ?, ?)',
-                (self.calc_id, job.mol_id, se)
+                "INSERT INTO calc_error (calc_id, molecule_id, error) VALUES (?, ?, ?)",
+                (self.calc_id, job.mol_id, se),
             )
 
     def on_task_end(self):
@@ -117,11 +117,14 @@ class CalcTask(Task):
         with transaction(self.conn) as cur:
             for desc_id, vmin, vmax, mean, std in results:
                 cur.execute(
-                    'UPDATE descriptor SET min = ?, max = ?, mean = ?, std = ? WHERE id = ?',
-                    (vmin, vmax, mean, std, desc_id)
+                    """
+                    UPDATE descriptor
+                    SET min = ?, max = ?, mean = ?, std = ?
+                    WHERE id = ?""",
+                    (vmin, vmax, mean, std, desc_id),
                 )
 
-            cur.execute('UPDATE calc SET done = 1 WHERE id = ?', (self.calc_id,))
+            cur.execute("UPDATE calc SET done = 1 WHERE id = ?", (self.calc_id,))
 
     def on_job_end(self, job, results):
 
@@ -133,10 +136,10 @@ class CalcTask(Task):
                 else:
                     value = result
 
-                cur.execute('''
+                cur.execute("""
                     INSERT INTO result (calc_id, molecule_id, descriptor_id, value, error)
                     VALUES (?, ?, ?, ?, ?)
-                    ''', (self.calc_id, job.mol_id, desc_id, value, error))
+                    """, (self.calc_id, job.mol_id, desc_id, value, error))
 
                 if error:
                     continue
@@ -155,7 +158,10 @@ class CalcTask(Task):
                 self.M[i] += (value - M) / self.k[i]
                 self.S[i] += (value - M) * (value - self.M[i])
 
-            cur.execute('UPDATE calc SET current = current + 1 WHERE id = ?', (self.calc_id,))
+            cur.execute(
+                "UPDATE calc SET current = current + 1 WHERE id = ?",
+                (self.calc_id,),
+            )
 
     def __next__(self):
         if len(self.mols) == 0:
@@ -178,7 +184,7 @@ class CalcIdHandler(SSEHandler):
     def post(self, file_text_id):
         with self.transaction() as cur:
             cur.execute(
-                'SELECT id, name, total FROM file WHERE text_id = ? LIMIT 1',
+                "SELECT id, name, total FROM file WHERE text_id = ? LIMIT 1",
                 (file_text_id,),
             )
             result = cur.fetchone()
@@ -189,9 +195,9 @@ class CalcIdHandler(SSEHandler):
 
             calc_text_id = issue_text_id()
 
-            cur.execute('''
+            cur.execute("""
             INSERT INTO calc (file_id, text_id, created_at, current, done)
-            VALUES (?, ?, ?, 0, 0)''', (file_id, calc_text_id, int(time.time())))
+            VALUES (?, ?, ?, 0, 0)""", (file_id, calc_text_id, int(time.time())))
 
             calc_id = cur.lastrowid
 
@@ -207,7 +213,7 @@ class CalcIdHandler(SSEHandler):
 
     def get(self, calc_text_id):
         with self.transaction() as cur:
-            cur.execute('SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1', (calc_text_id,))
+            cur.execute("SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1", (calc_text_id,))
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "no id")
@@ -215,14 +221,14 @@ class CalcIdHandler(SSEHandler):
             self.calc_id, self.file_id = result
 
             cur.execute(
-                'SELECT name, total, text_id FROM file WHERE id = ? LIMIT 1',
+                "SELECT name, total, text_id FROM file WHERE id = ? LIMIT 1",
                 (self.file_id,),
             )
             self.file_name, self.total, file_text_id = cur.fetchone()
 
-        accept, _ = parse_header(self.request.headers['Accept'])
+        accept, _ = parse_header(self.request.headers["Accept"])
 
-        if accept == 'text/event-stream':
+        if accept == "text/event-stream":
             return self.get_sse()
         else:
             return self.get_json()
@@ -233,14 +239,15 @@ class CalcIdHandler(SSEHandler):
         while True:
             with self.transaction() as cur:
                 cur.execute(
-                    'SELECT done, current FROM calc WHERE id = ? LIMIT 1',
+                    "SELECT done, current FROM calc WHERE id = ? LIMIT 1",
                     (self.calc_id,),
                 )
 
                 done, current = cur.fetchone()
 
             yield self.publish(
-                total=self.total, name=self.file_name, done=bool(done), current=current
+                total=self.total, name=self.file_name,
+                done=bool(done), current=current,
             )
 
             if done:
@@ -250,7 +257,7 @@ class CalcIdHandler(SSEHandler):
     def get_json(self):
         with self.transaction() as cur:
             cur.execute(
-                'SELECT name, text_id FROM file WHERE id = ? LIMIT 1',
+                "SELECT name, text_id FROM file WHERE id = ? LIMIT 1",
                 (self.file_id,),
             )
 
@@ -258,25 +265,25 @@ class CalcIdHandler(SSEHandler):
             if result is None:
                 self.fail(404, "no id")
 
-            cur.execute('''
+            cur.execute("""
                 SELECT molecule.nth, molecule.name, calc_error.error
                 FROM calc_error LEFT OUTER JOIN molecule
                     ON calc_error.molecule_id = molecule.id
                 WHERE calc_error.calc_id = ?
                 ORDER BY molecule.nth
-            ''', (self.calc_id,))
+            """, (self.calc_id,))
 
             errors = [
                 {"nth": nth, "name": name, "error": error}
                 for nth, name, error in cur.fetchall()
             ]
 
-            cur.execute('''
+            cur.execute("""
                 SELECT name, max, min, mean, std
                 FROM descriptor
                 WHERE calc_id = ?
                 ORDER BY id
-            ''', (self.calc_id,))
+            """, (self.calc_id,))
 
             descs = [
                 {"name": name, "max": vmax, "min": vmin, "mean": mean, "std": std}
@@ -294,14 +301,14 @@ class CalcIdHandler(SSEHandler):
 
 
 class CalcIdExtHandler(RequestHandler):
-    EXTS = set(["csv"])
+    EXTS = {"csv"}
 
     def get(self, calc_text_id, ext):
         if ext not in self.EXTS:
             self.fail(400, "unknown extension")
 
         with self.transaction() as cur:
-            cur.execute('SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1', (calc_text_id,))
+            cur.execute("SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1", (calc_text_id,))
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "no id")
@@ -309,14 +316,14 @@ class CalcIdExtHandler(RequestHandler):
             self.calc_id, self.file_id = result
 
             cur.execute(
-                'SELECT id, name FROM molecule WHERE file_id = ? ORDER BY nth',
-                (self.file_id,)
+                "SELECT id, name FROM molecule WHERE file_id = ? ORDER BY nth",
+                (self.file_id,),
             )
             self.molecules = cur.fetchall()
 
             cur.execute(
-                'SELECT name FROM descriptor WHERE calc_id = ? ORDER BY id',
-                (self.calc_id,)
+                "SELECT name FROM descriptor WHERE calc_id = ? ORDER BY id",
+                (self.calc_id,),
             )
             self.descriptors = [d for d, in cur.fetchall()]
 
@@ -324,17 +331,19 @@ class CalcIdExtHandler(RequestHandler):
                 return self.get_csv(cur)
 
     def get_csv(self, cur):
-        self.set_header('content-type', 'text/csv')
-        self.write('name,')
-        self.write(','.join(self.descriptors))
-        self.write('\n')
+        self.set_header("content-type", "text/csv")
+        self.write("name,")
+        self.write(",".join(self.descriptors))
+        self.write("\n")
 
         for mol_id, name in self.molecules:
-            self.write(name + ',')
-            cur.execute('''
-                SELECT value FROM result WHERE calc_id = ? AND molecule_id = ?
+            self.write(name + ",")
+            cur.execute("""
+                SELECT value
+                FROM result
+                WHERE calc_id = ? AND molecule_id = ?
                 ORDER BY descriptor_id
-                ''', (self.calc_id, mol_id))
+                """, (self.calc_id, mol_id))
 
-            self.write(','.join(('' if v is None else str(v)) for v, in cur.fetchall()))
-            self.write('\n')
+            self.write(",".join(("" if v is None else str(v)) for v, in cur.fetchall()))
+            self.write("\n")

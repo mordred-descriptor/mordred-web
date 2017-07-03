@@ -1,8 +1,10 @@
 import threading
-from . import exitable
-from loky import ProcessPoolExecutor
-from six import with_metaclass
 from abc import ABCMeta, abstractmethod
+
+from six import with_metaclass
+from loky import ProcessPoolExecutor
+
+from . import exitable
 
 
 class Task(with_metaclass(ABCMeta, object)):
@@ -37,7 +39,7 @@ class SingleTask(Task):
         raise NotImplementedError
 
     def __next__(self):
-        if getattr(self, '_already_executed', False):
+        if getattr(self, "_already_executed", False):
             raise StopIteration
 
         self._already_executed = True
@@ -217,19 +219,19 @@ class TestTask(Task):
         return TestJob(self.name, self.i)
 
     def on_task_start(self):
-        print('task start')
+        print("task start")  # noqa: T003
 
     def on_task_end(self):
-        print('task end')
+        print("task end")  # noqa: T003
 
     def on_job_start(self, job):
-        print('job start')
+        print("job start")  # noqa: T003
 
     def on_job_end(self, job, v):
-        print('job end', v)
+        print("job end", v)  # noqa: T003
 
     def on_job_error(self, job, e):
-        print('job error', e)
+        print("job error", e)  # noqa: T003
 
 
 def main():
@@ -240,5 +242,5 @@ def main():
         q.join()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

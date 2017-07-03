@@ -1,7 +1,9 @@
-from tornado import gen, web, iostream
-from contextlib import contextmanager
-from ..db import transaction
 import json
+from contextlib import contextmanager
+
+from tornado import gen, web, iostream
+
+from ..db import transaction
 
 
 class RequestHandler(web.RequestHandler):
@@ -37,12 +39,12 @@ class RequestHandler(web.RequestHandler):
 
 class SSEHandler(RequestHandler):
     def init_sse(self):
-        self.set_header('content-type', 'text/event-stream')
-        self.set_header('cache-control', 'no-cache')
+        self.set_header("content-type", "text/event-stream")
+        self.set_header("cache-control", "no-cache")
 
     @gen.coroutine
     def publish(self, **obj):
-        self.write('data: {}\n\n'.format(json.dumps(obj)))
+        self.write("data: {}\n\n".format(json.dumps(obj)))
         try:
             yield self.flush()
         except iostream.StreamClosedError:

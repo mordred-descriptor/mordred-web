@@ -1,29 +1,29 @@
-from tornado import gen, web
-from cgi import parse_header
-import re
-from io import BytesIO
 import os
+import re
 import time
-from rdkit import Chem
-from rdkit.Chem import Draw
+from io import BytesIO
+from cgi import parse_header
 from tempfile import NamedTemporaryFile
+
+from rdkit import Chem
+from tornado import gen, web
+from rdkit.Chem import Draw
 from rdkit.Chem.rdDistGeom import EmbedMolecule
-from rdkit.Chem.rdForceFieldHelpers import MMFFOptimizeMolecule, UFFOptimizeMolecule
+from rdkit.Chem.rdForceFieldHelpers import UFFOptimizeMolecule, MMFFOptimizeMolecule
 
-from ..db import issue_text_id, transaction, Phase
-from .common import RequestHandler, SSEHandler
-from ..task_queue import SingleTask, Task
-
+from ..db import Phase, transaction, issue_text_id
+from .common import SSEHandler, RequestHandler
+from ..task_queue import Task, SingleTask
 
 MEGA = 1024 * 1024
-SMI_FIELDS = re.compile(br'^(\S+)\s+(.+)?')
+SMI_FIELDS = re.compile(br"^(\S+)\s+(.+)?")
 
 
 def read_smiles(bs):
     for i, line in enumerate(BytesIO(bs), 1):
         fields = SMI_FIELDS.match(line)
         if fields is None:
-            yield ValueError('parse failed on line {}'.format(i)), None
+            yield ValueError("parse failed on line {}".format(i)), None
             continue
 
         smi, name = fields.groups()
@@ -32,11 +32,11 @@ def read_smiles(bs):
 
         mol = Chem.MolFromSmiles(smi)
         if mol is None:
-            yield ValueError('SMILES parse failed on line {}: {}'.format(
-                i, line.decode('UTF-8').strip())
+            yield ValueError("SMILES parse failed on line {}: {}".format(
+                i, line.decode("UTF-8").strip()),
             ), None
             continue
-        yield mol, name.decode('UTF-8')
+        yield mol, name.decode("UTF-8")
 
 
 def read_sdf(bs):
@@ -46,11 +46,11 @@ def read_sdf(bs):
 
         for i, mol in enumerate(Chem.SDMolSupplier(tmp.name, removeHs=False), 1):
             if mol is None:
-                yield ValueError('SDF parser failed on {}-th molecule'.format(i)), None
+                yield ValueError("SDF parser failed on {}-th molecule".format(i)), None
                 continue
 
-            if mol.HasProp('_Name'):
-                name = mol.GetProp('_Name')
+            if mol.HasProp("_Name"):
+                name = mol.GetProp("_Name")
             else:
                 name = Chem.MolToSmiles(mol)
 
@@ -76,17 +76,17 @@ class ParseTask(SingleTask):
         is3D = self.reader != read_smiles or self.gen3D
 
         with transaction(self.conn) as cur:
-            cur.execute('''
+            cur.execute("""
             INSERT INTO file (text_id, name, created_at, gen3D, is3D, desalt, phase)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (self.text_id, self.filename, int(time.time()),
+            """, (self.text_id, self.filename, int(time.time()),
                   self.gen3D, is3D, self.desalt, Phase.PENDING.value))
             self.file_id = cur.lastrowid
 
     def on_task_start(self):
         with transaction(self.conn) as cur:
             cur.execute(
-                'UPDATE file SET phase = ? WHERE id = ?',
+                "UPDATE file SET phase = ? WHERE id = ?",
                 (Phase.IN_PROGRESS.value, self.file_id),
             )
 
@@ -94,14 +94,14 @@ class ParseTask(SingleTask):
         self.mols, errors = v
         with transaction(self.conn) as cur:
             cur.execute(
-                'UPDATE file SET total = ? WHERE id = ?',
+                "UPDATE file SET total = ? WHERE id = ?",
                 (len(self.mols), self.file_id),
             )
             for err in errors:
-                cur.execute('''
+                cur.execute("""
                 INSERT INTO file_error (file_id, error)
                 VALUES (?, ?)
-                ''', (self.file_id, str(err)))
+                """, (self.file_id, str(err)))
 
     def on_job_error(self, job, e):
         se = str(e)
@@ -110,17 +110,17 @@ class ParseTask(SingleTask):
 
         with transaction(self.conn) as cur:
             cur.execute(
-                'UPDATE file SET phase = ?, total = 0 WHERE id = ?',
-                (Phase.ERROR.value, self.file_id,)
+                "UPDATE file SET phase = ?, total = 0 WHERE id = ?",
+                (Phase.ERROR.value, self.file_id,),
             )
 
             cur.execute(
-                'INSERT INTO file_error (file_id, error) VALUES (?, ?)',
-                (self.file_id, 'parse error: {}'.format(se)),
+                "INSERT INTO file_error (file_id, error) VALUES (?, ?)",
+                (self.file_id, "parse error: {}".format(se)),
             )
 
     def next_task(self):
-        if not hasattr(self, 'mols'):
+        if not hasattr(self, "mols"):
             return
 
         return PrepareTask(
@@ -151,8 +151,8 @@ class ParseJob(object):
         for i, (mol, name) in enumerate(self.reader(self.body)):
             if self.molecule_limit is not None and i >= self.molecule_limit:
                 errors.append(
-                    'number of molecule limit: using first {} molecules'.format(
-                        self.molecule_limit
+                    "number of molecule limit: using first {} molecules".format(
+                        self.molecule_limit,
                     ))
                 break
 
@@ -182,10 +182,10 @@ class PrepareTask(Task):
         else:
             ff = None
         with transaction(self.conn) as cur:
-            cur.execute('''
+            cur.execute("""
             INSERT INTO molecule (file_id, nth, forcefield, name, mol)
             VALUES (?, ?, ?, ?, ?)
-            ''', (self.file_id, self.i, ff, name, mol))
+            """, (self.file_id, self.i, ff, name, mol))
 
         self.i += 1
 
@@ -196,18 +196,18 @@ class PrepareTask(Task):
 
         with transaction(self.conn) as cur:
             cur.execute(
-                'UPDATE file SET total = total - 1 WHERE id = ?',
+                "UPDATE file SET total = total - 1 WHERE id = ?",
                 (self.file_id,),
             )
             cur.execute(
-                'INSERT INTO file_error (file_id, error) VALUES (?, ?)',
-                (self.file_id, '{}: prepare: {}'.format(job.name, se)),
+                "INSERT INTO file_error (file_id, error) VALUES (?, ?)",
+                (self.file_id, "{}: prepare: {}".format(job.name, se)),
             )
 
     def on_task_end(self):
         with transaction(self.conn) as cur:
             cur.execute(
-                'UPDATE file SET phase = ? WHERE id = ?',
+                "UPDATE file SET phase = ? WHERE id = ?",
                 (Phase.DONE.value, self.file_id),
             )
 
@@ -273,8 +273,8 @@ class PrepareJob(object):
 
 
 class FileHandler(RequestHandler):
-    SMI_EXT = set([".smi", ".smiles"])
-    SDF_EXT = set([".sdf", ".sd", ".mol"])
+    SMI_EXT = {".smi", ".smiles"}
+    SDF_EXT = {".sdf", ".sd", ".mol"}
 
     def post(self):
         gen3D = self.get_flag("gen3D", False)
@@ -297,7 +297,7 @@ class FileHandler(RequestHandler):
         elif ext in self.SDF_EXT:
             reader = read_sdf
         else:
-            self.fail(400, 'unknown extension: {}'.format(ext))
+            self.fail(400, "unknown extension: {}".format(ext))
 
         text_id = issue_text_id()
         task = ParseTask(
@@ -321,7 +321,7 @@ class FileHandler(RequestHandler):
 class FileIdHandler(SSEHandler):
     def get(self, id):
         with self.transaction() as cur:
-            cur.execute('SELECT id, name FROM file WHERE text_id = ? LIMIT 1', (id,))
+            cur.execute("SELECT id, name FROM file WHERE text_id = ? LIMIT 1", (id,))
             result = cur.fetchone()
 
         if result is None:
@@ -329,9 +329,9 @@ class FileIdHandler(SSEHandler):
 
         self.file_id, self.filename = result
 
-        accept, _ = parse_header(self.request.headers['Accept'])
+        accept, _ = parse_header(self.request.headers["Accept"])
 
-        if accept == 'text/event-stream':
+        if accept == "text/event-stream":
             return self.get_sse(id)
 
         else:
@@ -342,12 +342,12 @@ class FileIdHandler(SSEHandler):
         self.init_sse()
         while True:
             with self.transaction() as cur:
-                cur.execute('''
+                cur.execute("""
                 SELECT total, phase, count(molecule.file_id)
                 FROM file LEFT OUTER JOIN molecule ON file.id = molecule.file_id
                 WHERE file.id = ?
                 LIMIT 1
-                ''', (self.file_id,))
+                """, (self.file_id,))
 
                 total, phase, current = cur.fetchone()
 
@@ -359,19 +359,19 @@ class FileIdHandler(SSEHandler):
     def get_json(self, id):
         with self.transaction() as cur:
             cur.execute(
-                'SELECT name, gen3D, is3D, desalt, phase FROM file WHERE id = ? LIMIT 1',
+                "SELECT name, gen3D, is3D, desalt, phase FROM file WHERE id = ? LIMIT 1",
                 (self.file_id,),
             )
             name, gen3D, is3D, desalt, phase = cur.fetchone()
 
             cur.execute(
-                'SELECT name, forcefield FROM molecule WHERE file_id = ?',
+                "SELECT name, forcefield FROM molecule WHERE file_id = ?",
                 (self.file_id,),
             )
-            mols = [{'name': n, 'forcefield': f} for n, f in cur.fetchall()]
+            mols = [{"name": n, "forcefield": f} for n, f in cur.fetchall()]
 
             cur.execute(
-                'SELECT error FROM file_error WHERE file_id = ?',
+                "SELECT error FROM file_error WHERE file_id = ?",
                 (self.file_id,),
             )
             errors = [e for e, in cur.fetchall()]
@@ -388,25 +388,25 @@ class FileIdHandler(SSEHandler):
 
 
 class FileIdExtHandler(RequestHandler):
-    EXTS = set(["sdf", 'smi'])
+    EXTS = {"sdf", "smi"}
 
     def get(self, text_id, ext):
         if ext not in self.EXTS:
             self.fail(400, "unknown extension")
 
         with self.transaction() as cur:
-            cur.execute('SELECT id FROM FILE WHERE text_id = ? LIMIT 1', (text_id,))
+            cur.execute("SELECT id FROM FILE WHERE text_id = ? LIMIT 1", (text_id,))
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "not found")
 
             file_id, = result
 
-            cur.execute('''
+            cur.execute("""
             SELECT name, mol, forcefield
             FROM molecule
             WHERE file_id = ?
-            ''', (file_id,))
+            """, (file_id,))
 
             if ext == "sdf":
                 self.get_sdf(cur)
@@ -447,7 +447,7 @@ class FileIdExtHandler(RequestHandler):
 
 
 class FileIdNthExtHandler(RequestHandler):
-    EXTS = set(["png", "mol"])
+    EXTS = {"png", "mol"}
 
     def get(self, id, nth, ext):
         if ext not in self.EXTS:
@@ -456,12 +456,12 @@ class FileIdNthExtHandler(RequestHandler):
         nth = int(nth)
 
         with self.transaction() as cur:
-            cur.execute('''
+            cur.execute("""
             SELECT name, mol, forcefield
             FROM molecule
             WHERE nth = ?
             AND file_id = (SELECT id FROM FILE WHERE text_id = ?)
-            LIMIT 1''', (nth, id))
+            LIMIT 1""", (nth, id))  # noqa: Q445
 
             result = cur.fetchone()
 

@@ -1,21 +1,20 @@
 import os
-
-import tornado.web
+import signal
 import socket
 import argparse
-import psutil
 import webbrowser
 from contextlib import closing
-import signal
+
+import psutil
+import tornado.web
 
 from .db import connect
 from .task_queue import TaskQueue
+from .handler.app import AppInfoHandler
 from .handler.calc import CalcIdHandler, CalcIdExtHandler
 from .handler.file import FileHandler, FileIdHandler, FileIdExtHandler, FileIdNthExtHandler
 from .handler.descriptor import DescriptorHandler
 from .handler.singlefile import SingleFileHandler
-from .handler.app import AppInfoHandler
-
 
 MEGA = 1024 * 1024
 
@@ -26,7 +25,7 @@ class Shutdown(object):
         self.ioloop = ioloop
 
     def __call__(self, sig, frame):
-        print('catch signal: {}'.format(sig))
+        print("catch signal: {}".format(sig))  # noqa: T003
         self.server.stop()
         self.ioloop.stop()
 
@@ -51,7 +50,7 @@ def get_free_address(lower=3000):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         for i in range(5000):
             try:
-                sock.bind(('', port + i))
+                sock.bind(("", port + i))
             except OSError:
                 pass
             else:
@@ -63,7 +62,7 @@ def get_free_address(lower=3000):
 def serve(port, workers, no_browser,
           file_size_limit=3, molecule_limit=50,
           parse_timeout=60, prepare_timeout=60, calc_timeout=60,
-          db='mordred-web.sqlite'):
+          db="mordred-web.sqlite"):
 
     if port is None:
         _, port = get_free_address()
@@ -71,7 +70,7 @@ def serve(port, workers, no_browser,
     if workers is None:
         workers = psutil.cpu_count(logical=False)
 
-    static = os.path.join(os.path.dirname(__file__), 'static')
+    static = os.path.join(os.path.dirname(__file__), "static")
     ioloop = tornado.ioloop.IOLoop.current()
 
     with connect(db) as conn, TaskQueue(workers, ioloop) as queue:
@@ -81,16 +80,16 @@ def serve(port, workers, no_browser,
             parse_timeout=parse_timeout, prepare_timeout=prepare_timeout,
             calc_timeout=calc_timeout,
             handlers=[
-                (r'/api/descriptor', DescriptorHandler),
-                (r'/api/info', AppInfoHandler),
-                (r'/api/file', FileHandler),
-                (r'/api/file/([0-9a-zA-Z]+)', FileIdHandler),
-                (r'/api/file/([0-9a-zA-Z]+)\.(.*)', FileIdExtHandler),
-                (r'/api/file/([0-9a-zA-Z]+)/([0-9]+)\.(.*)', FileIdNthExtHandler),
-                (r'/api/calc/([0-9a-zA-Z]+)', CalcIdHandler),
-                (r'/api/calc/([0-9a-zA-Z]+)\.(.*)', CalcIdExtHandler),
-                (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': static}),
-                (r'/.*', SingleFileHandler, {'path': os.path.join(static, 'index.html')}),
+                (r"/api/descriptor", DescriptorHandler),
+                (r"/api/info", AppInfoHandler),
+                (r"/api/file", FileHandler),
+                (r"/api/file/([0-9a-zA-Z]+)", FileIdHandler),
+                (r"/api/file/([0-9a-zA-Z]+)\.(.*)", FileIdExtHandler),
+                (r"/api/file/([0-9a-zA-Z]+)/([0-9]+)\.(.*)", FileIdNthExtHandler),
+                (r"/api/calc/([0-9a-zA-Z]+)", CalcIdHandler),
+                (r"/api/calc/([0-9a-zA-Z]+)\.(.*)", CalcIdExtHandler),
+                (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": static}),
+                (r"/.*", SingleFileHandler, {"path": os.path.join(static, "index.html")}),
             ], compress_response=True, static_hash_cache=True)
         server = tornado.httpserver.HTTPServer(app, max_body_size=(file_size_limit + 1) * MEGA)
         server.bind(port)
@@ -101,42 +100,42 @@ def serve(port, workers, no_browser,
 
         signal.signal(signal.SIGTERM, Shutdown(server, ioloop))
         signal.signal(signal.SIGINT, Shutdown(server, ioloop))
-        print('start mordred.web on {}'.format(url))
+        print("start mordred.web on {}".format(url))  # noqa: T003
         ioloop.start()
-        print('terminate...')
+        print("terminate...")  # noqa: T003
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Mordred Web UI')
-    parser.add_argument('-p', '--port', type=int, default=None, help='port')
-    parser.add_argument('-w', '--workers', type=int, default=None, help='number of workers')
+    parser = argparse.ArgumentParser(description="Mordred Web UI")
+    parser.add_argument("-p", "--port", type=int, default=None, help="port")
+    parser.add_argument("-w", "--workers", type=int, default=None, help="number of workers")
     parser.add_argument(
-        '--file-size-limit', metavar="MB", type=int, default=5,
+        "--file-size-limit", metavar="MB", type=int, default=5,
         help="upload file size limit",
     )
     parser.add_argument(
-        '--molecule-limit', metavar="N", type=int, default=None,
+        "--molecule-limit", metavar="N", type=int, default=None,
         help="number of molecule limit",
     )
     parser.add_argument(
-        '--parse-timeout', metavar='SEC', type=int, default=None,
+        "--parse-timeout", metavar="SEC", type=int, default=None,
         help="file parse timeout",
     )
     parser.add_argument(
-        '--prepare-timeout', metavar="SEC", type=int, default=None,
+        "--prepare-timeout", metavar="SEC", type=int, default=None,
         help="molecular preparation timeout",
     )
     parser.add_argument(
-        '--calc-timeout', metavar="SEC", type=int, default=None,
+        "--calc-timeout", metavar="SEC", type=int, default=None,
         help="descriptor calculation timeout",
     )
     parser.add_argument(
-        '--db', metavar="FILE", type=str, default="mordred-web.sqlite",
-        help="database file path"
+        "--db", metavar="FILE", type=str, default="mordred-web.sqlite",
+        help="database file path",
     )
     parser.add_argument(
-        '--no-browser', action='store_true', default=False,
-        help="don't open browser automatically"
+        "--no-browser", action="store_true", default=False,
+        help="don't open browser automatically",
     )
     result = (parser.parse_args())
     serve(**vars(result))
