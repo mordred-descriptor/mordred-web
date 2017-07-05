@@ -1,7 +1,6 @@
 pep8
 isort
 flake8
-flake8-imports
 flake8-double-quotes
 flake8-print
 flake8-commas
