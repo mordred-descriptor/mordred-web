@@ -1,4 +1,4 @@
-import {ChangeLocation} from "../route";
+import { ChangeLocation } from "../route";
 
 export interface Dispatcher<V> {
     dispatch(v: V): void;

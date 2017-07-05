@@ -3,7 +3,7 @@ import * as React from "react";
 
 export interface MolViewerProps {
     backgroundColor?: string;
-    src?: string|Blob|File;
+    src?: string | Blob | File;
     className?: string;
     loaderParams?: ngl.LoaderParameters;
 }
@@ -28,7 +28,7 @@ export class MolViewer extends React.Component<MolViewerProps, {}> {
 
     public componentDidMount(): void {
         const view = this.refs.view as Element;
-        this.stage = new ngl.Stage(view, {backgroundColor: this.props.backgroundColor});
+        this.stage = new ngl.Stage(view, { backgroundColor: this.props.backgroundColor });
         this.view = view;
         this.handleResize();
         this.callback = this.handleResize.bind(this);
@@ -43,10 +43,12 @@ export class MolViewer extends React.Component<MolViewerProps, {}> {
         this.stage.handleResize();
         this.stage.removeAllComponents();
         if (nextProps.src) {
-            this.stage.loadFile<ngl.StructureComponent>(nextProps.src, nextProps.loaderParams || {}).then((comp) => {
-                comp.addRepresentation("ball+stick", {});
-                this.stage.autoView(0);
-            });
+            this.stage
+                .loadFile<ngl.StructureComponent>(nextProps.src, nextProps.loaderParams || {})
+                .then(comp => {
+                    comp.addRepresentation("ball+stick", {});
+                    this.stage.autoView(0);
+                });
         }
     }
 
@@ -55,6 +57,6 @@ export class MolViewer extends React.Component<MolViewerProps, {}> {
     }
 
     public render() {
-        return <div ref="view" className={this.props.className}/>;
+        return <div ref="view" className={this.props.className} />;
     }
 }

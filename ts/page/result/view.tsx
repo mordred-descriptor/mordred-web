@@ -1,32 +1,46 @@
 import * as classnames from "classnames";
 import * as React from "react";
-import {Column, SortDirectionType, Table, TableCellProps, TableHeaderProps} from "react-virtualized";
-import {AutoSizer} from "react-virtualized/dist/es/AutoSizer";
-import {splitNumAndExp} from "../../util/math";
+import {
+    Column,
+    SortDirectionType,
+    Table,
+    TableCellProps,
+    TableHeaderProps
+} from "react-virtualized";
+import { AutoSizer } from "react-virtualized/dist/es/AutoSizer";
+import { splitNumAndExp } from "../../util/math";
 
 import * as Action from "./action";
-import {ResultState} from "./state";
+import { ResultState } from "./state";
 
 import * as api from "../../api";
 import * as Route from "../../route";
-import {ViewState} from "../../util/dispatch";
-import {BackButton, HomeButton} from "../../view/button";
-import {Dropdown} from "../../view/dropdown";
-import {ErrorView} from "../../view/error-view";
-import {Footer} from "../../view/footer";
-import {LoadingView} from "../../view/loading-page";
-import {ProgressView} from "../../view/progress-page";
+import { ViewState } from "../../util/dispatch";
+import { BackButton, HomeButton } from "../../view/button";
+import { Dropdown } from "../../view/dropdown";
+import { ErrorView } from "../../view/error-view";
+import { Footer } from "../../view/footer";
+import { LoadingView } from "../../view/loading-page";
+import { ProgressView } from "../../view/progress-page";
 
-function makeCell(v: number|null, i: number): React.ReactNode {
+function makeCell(v: number | null, i: number): React.ReactNode {
     if (v === null) {
-        return <td key={i} className="NA">-</td>;
+        return (
+            <td key={i} className="NA">
+                -
+            </td>
+        );
     }
 
     const fv = Math.round(v * 100) / 100;
-    return <td key={i}>{fv}</td>;
+    return (
+        <td key={i}>
+            {fv}
+        </td>
+    );
 }
 
-function DescriptorTable({descriptorInfo}: {descriptorInfo: ResultState["descriptorInfo"]}) {
+function DescriptorTable({ descriptorInfo }: { descriptorInfo: ResultState["descriptorInfo"] }) {
     const N: number = descriptorInfo.length;
     if (N === 0) {
         return null;
@@ -39,7 +53,11 @@ function DescriptorTable({descriptorInfo}: {descriptorInfo: ResultState["descrip
     const stds: React.ReactNode[] = new Array(N);
 
     descriptorInfo.forEach((v, i) => {
-        names[i] = <th key={v.index}>{v.name}</th>;
+        names[i] = (
+            <th key={v.index}>
+                {v.name}
+            </th>
+        );
         mins[i] = makeCell(v.min, v.index);
         maxs[i] = makeCell(v.max, v.index);
         means[i] = makeCell(v.mean, v.index);
@@ -52,14 +70,27 @@ function DescriptorTable({descriptorInfo}: {descriptorInfo: ResultState["descrip
                 <table className="table sticky">
                     <thead>
                         <tr>
-                            <th>statistics</th>{names}
+                            <th>statistics</th>
+                            {names}
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>min</td>{mins}</tr>
-                        <tr><td>max</td>{maxs}</tr>
-                        <tr><td>mean</td>{means}</tr>
-                        <tr><td>std</td>{stds}</tr>
+                        <tr>
+                            <td>min</td>
+                            {mins}
+                        </tr>
+                        <tr>
+                            <td>max</td>
+                            {maxs}
+                        </tr>
+                        <tr>
+                            <td>mean</td>
+                            {means}
+                        </tr>
+                        <tr>
+                            <td>std</td>
+                            {stds}
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -74,37 +105,54 @@ interface DownloadDropdownProps {
     csvUrl: string;
 }
 
-function DownloadDropdown({active, onClickOutside, onButtonClick, csvUrl}: DownloadDropdownProps) {
+function DownloadDropdown({
+    active,
+    onClickOutside,
+    onButtonClick,
+    csvUrl
+}: DownloadDropdownProps) {
     return (
         <Dropdown
             active={active}
             onClickOutside={onClickOutside}
-            buttonData={{tooltip: "Download"}}
+            buttonData={{ tooltip: "Download" }}
             buttonProps={{
                 className: "btn btn-link dropdown-toggle tooltip tooltip-right",
                 onClick: onButtonClick,
-                children: <i className="fa fa-lg fa-download"/>,
+                children: <i className="fa fa-lg fa-download" />
             }}
             disableOnClickOutside={!active}
-            >
+        >
             <a href={csvUrl}>csv</a>
         </Dropdown>
     );
 }
 
-function headerRenderer({label, dataKey, sortBy, sortDirection, disableSort}: TableHeaderProps) {
+function headerRenderer({ label, dataKey, sortBy, sortDirection, disableSort }: TableHeaderProps) {
     if (disableSort) {
-        return <div>{label || dataKey}</div>;
+        return (
+            <div>
+                {label || dataKey}
+            </div>
+        );
     }
     if (sortBy !== dataKey) {
-        return <div>{label || dataKey} <i className="sort-placeholder fa fa-sort"/></div>;
+        return (
+            <div>
+                {label || dataKey} <i className="sort-placeholder fa fa-sort" />
+            </div>
+        );
     }
 
     const sortClass = sortDirection === "ASC" ? "fa-sort-asc" : "fa-sort-desc";
-    return <div>{label || dataKey} <i className={classnames("fa", sortClass)}/></div>;
+    return (
+        <div>
+            {label || dataKey} <i className={classnames("fa", sortClass)} />
+        </div>
+    );
 }
 
-function aggrCellRenderer({cellData}: TableCellProps) {
+function aggrCellRenderer({ cellData }: TableCellProps) {
     if (cellData === null) {
         return <div className="data-NA">-</div>;
     }
@@ -114,9 +162,17 @@ function aggrCellRenderer({cellData}: TableCellProps) {
 
     const [n, e] = splitNumAndExp(cellData, 4);
     if (e === 0) {
-        return <div>{n.toPrecision(4)}</div>;
+        return (
+            <div>
+                {n.toPrecision(4)}
+            </div>
+        );
     } else {
-        return <div>{n.toPrecision(4)} &times; 10<sup>{e}</sup></div>;
+        return (
+            <div>
+                {n.toPrecision(4)} &times; 10<sup>{e}</sup>
+            </div>
+        );
     }
 }
 
@@ -125,80 +181,102 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
         headerRenderer,
         cellRenderer: aggrCellRenderer,
         flexGrow: 1,
-        width: 100,
+        width: 100
     };
 
     return (
         <div className="result-page page centered">
             <div className="top-bar">
                 <div>
-                    <h2>{state.name}</h2>
+                    <h2>
+                        {state.name}
+                    </h2>
                     <DownloadDropdown
                         active={state.downloadShown}
                         onClickOutside={() => state.dispatch(Action.SetDownloadShown(false))}
-                        onButtonClick={() => state.dispatch(Action.SetDownloadShown(!state.downloadShown))}
-                        csvUrl={`/api/calc/${state.id}.csv`}/>
+                        onButtonClick={() =>
+                            state.dispatch(Action.SetDownloadShown(!state.downloadShown))}
+                        csvUrl={`/api/calc/${state.id}.csv`}
+                    />
                 </div>
 
                 <div>
-                    <BackButton onClick={() => state.dispatch(Route.ChangeLocation(Route.File(state.file_id)))}/>
-                    <HomeButton onClick={() => state.dispatch(Route.ChangeLocation(Route.Upload()))}/>
+                    <BackButton
+                        onClick={() =>
+                            state.dispatch(Route.ChangeLocation(Route.File(state.file_id)))}
+                    />
+                    <HomeButton
+                        onClick={() => state.dispatch(Route.ChangeLocation(Route.Upload()))}
+                    />
                 </div>
             </div>
 
-            {
-                state.errors.map(({name, nth, error}, i) => {
-                    const body = nth === null ? error : `${nth + 1}: ${name}: ${error}`;
+            {state.errors.map(({ name, nth, error }, i) => {
+                const body = nth === null ? error : `${nth + 1}: ${name}: ${error}`;
 
-                    return (
-                        <div key={i} className="toast toast-error">
-                            {body}
-                            <button
-                                onClick={() => state.dispatch(Action.CloseError(i))}
-                                className="btn btn-clear float-right"/>
-                        </div>
-                    );
-                })
-            }
+                return (
+                    <div key={i} className="toast toast-error">
+                        {body}
+                        <button
+                            onClick={() => state.dispatch(Action.CloseError(i))}
+                            className="btn btn-clear float-right"
+                        />
+                    </div>
+                );
+            })}
 
             <h5 className="result-table-caption">Summary</h5>
-            <AutoSizer disableHeight>{({width}) => (
-                <Table
-                    className="table"
-                    height={300}
-                    rowHeight={50}
-                    headerHeight={50}
-                    rowCount={state.descriptorInfo.length}
-                    width={width}
-                    rowGetter={({index}) => state.descriptorInfo[index]}
-                    sort={(v) => state.dispatch(Action.ChangeSort(v as any))}
-                    sortBy={state.sortBy}
-                    sortDirection={state.sortDirection}
+            <AutoSizer disableHeight>
+                {({ width }) =>
+                    <Table
+                        className="table"
+                        height={300}
+                        rowHeight={50}
+                        headerHeight={50}
+                        rowCount={state.descriptorInfo.length}
+                        width={width}
+                        rowGetter={({ index }) => state.descriptorInfo[index]}
+                        sort={v => state.dispatch(Action.ChangeSort(v as any))}
+                        sortBy={state.sortBy}
+                        sortDirection={state.sortDirection}
                     >
-                    <Column label="#" dataKey="index" headerRenderer={headerRenderer} width={40} minWidth={40}/>
-                    <Column dataKey="name" disableSort headerRenderer={headerRenderer} flexGrow={1} width={100}/>
-                    <Column dataKey="min" {...aggrProps} />
-                    <Column dataKey="max" {...aggrProps} />
-                    <Column dataKey="mean" {...aggrProps} />
-                    <Column dataKey="std" {...aggrProps} />
-                </Table>
-            )}</AutoSizer>
+                        <Column
+                            label="#"
+                            dataKey="index"
+                            headerRenderer={headerRenderer}
+                            width={40}
+                            minWidth={40}
+                        />
+                        <Column
+                            dataKey="name"
+                            disableSort
+                            headerRenderer={headerRenderer}
+                            flexGrow={1}
+                            width={100}
+                        />
+                        <Column dataKey="min" {...aggrProps} />
+                        <Column dataKey="max" {...aggrProps} />
+                        <Column dataKey="mean" {...aggrProps} />
+                        <Column dataKey="std" {...aggrProps} />
+                    </Table>}
+            </AutoSizer>
 
-            <Footer/>
+            <Footer />
         </div>
     );
 }
 
 export function ResultView(state: ViewState<ResultState, Action.ResultAction>) {
     if (state.id === null) {
-        return <LoadingView/>;
+        return <LoadingView />;
     }
 
     if (state.notFound) {
         return (
             <ErrorView
                 title="File ID not found"
-                onClickBack={() => state.dispatch(Route.ChangeLocation(Route.File(state.file_id)))}>
+                onClickBack={() => state.dispatch(Route.ChangeLocation(Route.File(state.file_id)))}
+            >
                 {state.id}
             </ErrorView>
         );
@@ -207,12 +285,15 @@ export function ResultView(state: ViewState<ResultState, Action.ResultAction>) {
     if (!state.done) {
         const ratio = state.current / state.total;
         const parcent = Math.round(ratio * 10000) / 100;
-        return <ProgressView
-            title="Calculating ..."
-            name={state.name || ""}
-            text={`${parcent}% (${state.current}/${state.total})`}
-            progress={ratio}/>;
+        return (
+            <ProgressView
+                title="Calculating ..."
+                name={state.name || ""}
+                text={`${parcent}% (${state.current}/${state.total})`}
+                progress={ratio}
+            />
+        );
     }
 
-    return <ResultMainView {...state}/>;
+    return <ResultMainView {...state} />;
 }

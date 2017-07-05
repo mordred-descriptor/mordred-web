@@ -1,20 +1,23 @@
 import * as objectAssign from "object-assign";
 
-import {DescriptorInfo} from "../../api";
+import { DescriptorInfo } from "../../api";
 import deleteIndex from "../../util/deleteIndex";
 import exhaustiveCheck from "../../util/exhaustiveCheck";
 import * as Action from "./action";
-import {initResult, ResultState} from "./state";
+import { initResult, ResultState } from "./state";
 
-export function resultReducer(state: ResultState = initResult, action: Action.ResultAction): ResultState {
+export function resultReducer(
+    state: ResultState = initResult,
+    action: Action.ResultAction
+): ResultState {
     let update: Partial<ResultState> = {};
     switch (action.type) {
         case Action.SET_ID:
-            update = {id: action.id};
+            update = { id: action.id };
             break;
 
         case Action.NOT_FOUND:
-            update = {notFound: true};
+            update = { notFound: true };
             break;
 
         case Action.UPDATE_STATE:
@@ -22,7 +25,7 @@ export function resultReducer(state: ResultState = initResult, action: Action.Re
                 total: action.total,
                 current: action.current,
                 name: action.name,
-                done: action.done,
+                done: action.done
             };
             break;
 
@@ -31,14 +34,14 @@ export function resultReducer(state: ResultState = initResult, action: Action.Re
                 file_id: action.file_id,
                 file_name: action.file_name,
                 descriptorInfo: action.descriptors.map((d, i) => {
-                    return {...d, index: i};
+                    return { ...d, index: i };
                 }),
-                errors: action.errors,
+                errors: action.errors
             };
             break;
 
         case Action.SET_DOWNLOAD_DROPDOWN:
-            update = {downloadShown: action.shown};
+            update = { downloadShown: action.shown };
             break;
 
         case Action.CHANGE_SORT:
@@ -49,27 +52,30 @@ export function resultReducer(state: ResultState = initResult, action: Action.Re
                 return (a: DescriptorInfo, b: DescriptorInfo) => {
                     const x = a[sortBy];
                     const y = b[sortBy];
-                    if (x === null) { return sm; }
-                    if (y === null) { return lg; }
+                    if (x === null) {
+                        return sm;
+                    }
+                    if (y === null) {
+                        return lg;
+                    }
                     return x > y ? lg : sm;
                 };
             };
 
-            const compare = (action.sortDirection === "ASC") ?
-                makeCompare(1, -1) :
-                makeCompare(-1, 1);
+            const compare =
+                action.sortDirection === "ASC" ? makeCompare(1, -1) : makeCompare(-1, 1);
 
             newDI.sort(compare);
 
             update = {
                 sortBy: action.sortBy,
                 sortDirection: action.sortDirection,
-                descriptorInfo: newDI,
+                descriptorInfo: newDI
             };
             break;
 
         case Action.CLOSE_ERROR:
-            update = {errors: deleteIndex<ResultState["errors"][0]>(state.errors, action.index)};
+            update = { errors: deleteIndex<ResultState["errors"][0]>(state.errors, action.index) };
             break;
 
         default:

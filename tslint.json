@@ -5,6 +5,8 @@
     ],
     "jsRules": {},
     "rules": {
+        "trailing-comma": [true, {"funtions": "never"}],
+        "arrow-parens": [true, "ban-single-arg-parens"],
         "no-namespace": false,
         "max-classes-per-file": false,
         "no-empty": false,

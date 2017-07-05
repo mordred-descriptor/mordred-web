@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import {Dropdown} from "../../view/dropdown";
+import { Dropdown } from "../../view/dropdown";
 
 export interface DownloadDropdownProps {
     shown: boolean;
@@ -15,14 +15,14 @@ export function DownloadDropdown(props: DownloadDropdownProps) {
         <Dropdown
             active={props.shown}
             onClickOutside={props.onClickOutside}
-            buttonData={{tooltip: "Download"}}
+            buttonData={{ tooltip: "Download" }}
             buttonProps={{
                 className: "btn btn-link dropdown-toggle tooltip tooltip-right",
                 onClick: props.onButtonClick,
-                children: <i className="fa fa-lg fa-download"/>,
+                children: <i className="fa fa-lg fa-download" />
             }}
             disableOnClickOutside={!props.shown}
-            >
+        >
             {props.children}
         </Dropdown>
     );

@@ -1,6 +1,6 @@
-import {FileState, initFile} from "./page/file";
-import {initResult, ResultState} from "./page/result";
-import {initUpload, UploadState} from "./page/upload";
+import { FileState, initFile } from "./page/file";
+import { initResult, ResultState } from "./page/result";
+import { initUpload, UploadState } from "./page/upload";
 import * as Route from "./route";
 
 export interface State {
@@ -14,5 +14,5 @@ export const initState: State = {
     route: Route.OnLoadPage(),
     upload: initUpload,
     result: initResult,
-    file: initFile,
+    file: initFile
 };

@@ -1,5 +1,5 @@
-import {createBrowserHistory, Location} from "history";
-import {takeLatest} from "redux-saga/effects";
+import { createBrowserHistory, Location } from "history";
+import { takeLatest } from "redux-saga/effects";
 import exhaustiveCheck from "./util/exhaustiveCheck";
 
 export const UPLOAD: "ROUTE:UPLOAD" = "ROUTE:UPLOAD";
@@ -13,7 +13,7 @@ export interface Upload {
 }
 
 export function Upload(): Upload {
-    return {type: UPLOAD};
+    return { type: UPLOAD };
 }
 
 export interface File {
@@ -22,7 +22,7 @@ export interface File {
 }
 
 export function File(id: string): File {
-    return {type: FILE, id};
+    return { type: FILE, id };
 }
 
 export interface Result {
@@ -31,7 +31,7 @@ export interface Result {
 }
 
 export function Result(id: string): Result {
-    return {type: RESULT, id};
+    return { type: RESULT, id };
 }
 
 export interface NotFound {
@@ -39,7 +39,7 @@ export interface NotFound {
 }
 
 export function NotFound(): NotFound {
-    return {type: NOT_FOUND};
+    return { type: NOT_FOUND };
 }
 
 export interface OnLoadPage {
@@ -47,20 +47,14 @@ export interface OnLoadPage {
 }
 
 export function OnLoadPage(): OnLoadPage {
-    return {type: ON_LOAD_PAGE};
+    return { type: ON_LOAD_PAGE };
 }
 
-export type Route
-    = Upload
-    | Result
-    | File
-
-    | NotFound
-    | OnLoadPage;
+export type Route = Upload | Result | File | NotFound | OnLoadPage;
 
 export type RouteChanged = Route;
 
-export function isRouteChanged(a: {type: string}): a is RouteChanged {
+export function isRouteChanged(a: { type: string }): a is RouteChanged {
     return /^ROUTE:/.test(a.type);
 }
 
@@ -72,14 +66,12 @@ export interface ChangeLocation {
 }
 
 export function ChangeLocation(r: Route): ChangeLocation {
-    return {type: CHANGE_LOCATION, route: r};
+    return { type: CHANGE_LOCATION, route: r };
 }
 
-export type RouteAction
-    = RouteChanged
-    | ChangeLocation;
+export type RouteAction = RouteChanged | ChangeLocation;
 
-export function isRouteAction(a: {type: string}): a is RouteAction {
+export function isRouteAction(a: { type: string }): a is RouteAction {
     return isRouteChanged(a) || a.type === CHANGE_LOCATION;
 }
 
@@ -129,7 +121,7 @@ export function pushHistory(route: Route): void {
 }
 
 export function* changeLocationSaga() {
-    yield takeLatest<ChangeLocation>(CHANGE_LOCATION, (act) => pushHistory(act.route));
+    yield takeLatest<ChangeLocation>(CHANGE_LOCATION, act => pushHistory(act.route));
 }
 
 export function routeReducer(state: Route, action: RouteAction): Route {

@@ -15,7 +15,7 @@ export function numberOfDigit(n: number) {
 
 export function splitNumAndExp(n: number, expDigit: number = 2): [number, number] {
     const d = numberOfDigit(n);
-    if (d > expDigit || d < (-expDigit + 2)) {
+    if (d > expDigit || d < -expDigit + 2) {
         const p = Math.pow(10, d - 1);
         return [n / p, d - 1];
     }

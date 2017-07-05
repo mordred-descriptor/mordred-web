@@ -1,20 +1,20 @@
 import * as React from "react";
 
 import * as Action from "./action";
-import {FileState} from "./state";
+import { FileState } from "./state";
 
 import * as api from "../../api";
 import * as Route from "../../route";
-import {ViewState} from "../../util/dispatch";
-import {BackButton, ConfigButton} from "../../view/button";
-import {ErrorView} from "../../view/error-view";
-import {Footer} from "../../view/footer";
-import {LoadingView} from "../../view/loading-page";
-import {ProgressView} from "../../view/progress-page";
+import { ViewState } from "../../util/dispatch";
+import { BackButton, ConfigButton } from "../../view/button";
+import { ErrorView } from "../../view/error-view";
+import { Footer } from "../../view/footer";
+import { LoadingView } from "../../view/loading-page";
+import { ProgressView } from "../../view/progress-page";
 
-import {ConfigModal} from "./config-modal";
-import {DownloadDropdown} from "./download-dropdown";
-import {MolViewer} from "./mol-view";
+import { ConfigModal } from "./config-modal";
+import { DownloadDropdown } from "./download-dropdown";
+import { MolViewer } from "./mol-view";
 
 function getDisables(disabled: FileState["disabled"]): string[] {
     const disables: string[] = [];
@@ -36,28 +36,36 @@ function MainFileView(props: ViewState<FileState, Action.FileAction>) {
                 descriptors={props.descriptors || []}
                 disabled={props.disabled}
                 onClickOutside={() => props.dispatch(Action.SetModalShown(false))}
-                onChangeDesc={(d, e) => props.dispatch(Action.SetDescriptorEnabled({name: d, enabled: e, store: true})) }
-                onChangeAll={(e) => props.dispatch(Action.SetAllDescriptorsEnabled(e))}
+                onChangeDesc={(d, e) =>
+                    props.dispatch(
+                        Action.SetDescriptorEnabled({ name: d, enabled: e, store: true })
+                    )}
+                onChangeAll={e => props.dispatch(Action.SetAllDescriptorsEnabled(e))}
                 onClick={() => props.dispatch(Action.SetModalShown(false))}
-                />
+            />
 
             <div className="top-bar">
                 <div>
-                    <h2>{props.name}</h2>
+                    <h2>
+                        {props.name}
+                    </h2>
                     <DownloadDropdown
                         shown={props.downloadShown}
                         id={props.id || ""}
                         onClickOutside={() => props.dispatch(Action.SetDownloadShown(false))}
-                        onButtonClick={() => props.dispatch(Action.SetDownloadShown(!props.downloadShown))}
-                        >
-                            <a href={`/api/file/${props.id}.smi`}>SMILES</a>
-                            <a href={`/api/file/${props.id}.sdf`}>SDF</a>
-                        </DownloadDropdown>
+                        onButtonClick={() =>
+                            props.dispatch(Action.SetDownloadShown(!props.downloadShown))}
+                    >
+                        <a href={`/api/file/${props.id}.smi`}>SMILES</a>
+                        <a href={`/api/file/${props.id}.sdf`}>SDF</a>
+                    </DownloadDropdown>
                 </div>
 
                 <div>
-                    <BackButton onClick={() => props.dispatch(Route.ChangeLocation(Route.Upload()))}/>
-                    <ConfigButton onClick={() => props.dispatch(Action.SetModalShown(true))}/>
+                    <BackButton
+                        onClick={() => props.dispatch(Route.ChangeLocation(Route.Upload()))}
+                    />
+                    <ConfigButton onClick={() => props.dispatch(Action.SetModalShown(true))} />
                 </div>
             </div>
 
@@ -65,9 +73,10 @@ function MainFileView(props: ViewState<FileState, Action.FileAction>) {
                 <div className="toast toast-error" key={i}>
                     <button
                         onClick={() => props.dispatch(Action.CloseError(i))}
-                        className="btn btn-clear float-right"/>
+                        className="btn btn-clear float-right"
+                    />
                     {e}
-                </div>,
+                </div>
             )}
 
             <MolViewer
@@ -79,17 +88,22 @@ function MainFileView(props: ViewState<FileState, Action.FileAction>) {
                 is3D={props.is3D}
                 onClickLeft={() => props.dispatch(Action.SetCurrentMol(props.current - 1))}
                 onClickRight={() => props.dispatch(Action.SetCurrentMol(props.current + 1))}
-                />
+            />
 
             <div className="action text-right calculate-action">
                 <button
                     className="btn btn-primary"
                     disabled={!props.id}
-                    onClick={() => props.dispatch(Action.Calculate(props.id || "", getDisables(props.disabled)))}
-                    >Calculate</button>
+                    onClick={() =>
+                        props.dispatch(
+                            Action.Calculate(props.id || "", getDisables(props.disabled))
+                        )}
+                >
+                    Calculate
+                </button>
             </div>
 
-            <Footer/>
+            <Footer />
         </div>
     );
 }
@@ -108,16 +122,18 @@ export function FileView(props: ViewState<FileState, Action.FileAction>) {
     if (props.phase === api.PHASE_PENDING || props.phase === api.PHASE_IN_PROGRESS) {
         const ratio = props.progress / props.total;
         const parcent = Math.round(ratio * 10000) / 100;
-        return <ProgressView
-            title={props.phase === api.PHASE_PENDING ? "Pending" : "Prepareing ..."}
-            name={props.name}
-            text={`${parcent}% (${props.progress}/${props.total})`}
-            progress={ratio}
-            />;
+        return (
+            <ProgressView
+                title={props.phase === api.PHASE_PENDING ? "Pending" : "Prepareing ..."}
+                name={props.name}
+                text={`${parcent}% (${props.progress}/${props.total})`}
+                progress={ratio}
+            />
+        );
     }
 
     if (props.phase === api.PHASE_DONE && props.mols[props.current]) {
-        return <MainFileView {...props}/>;
+        return <MainFileView {...props} />;
     }
 
     if (props.phase === api.PHASE_ERROR) {
@@ -126,10 +142,10 @@ export function FileView(props: ViewState<FileState, Action.FileAction>) {
                 title="Error"
                 onClickBack={onClickBack}
                 toasts={props.file_errors}
-                onClickError={(i) => props.dispatch(Action.CloseError(i))}
-                />
+                onClickError={i => props.dispatch(Action.CloseError(i))}
+            />
         );
     }
 
-    return <LoadingView/>;
+    return <LoadingView />;
 }

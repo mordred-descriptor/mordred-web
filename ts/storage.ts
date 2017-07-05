@@ -1,4 +1,3 @@
-
 const ls = window.localStorage;
 
 function makeStore<T>(key: string): (value: T) => void {

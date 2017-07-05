@@ -1,28 +1,28 @@
-import {call, put, select, takeLatest} from "redux-saga/effects";
+import { call, put, select, takeLatest } from "redux-saga/effects";
 
 import * as api from "../../api";
 import * as Route from "../../route";
-import {State} from "../../state";
+import { State } from "../../state";
 import * as Action from "./action";
-import {UploadState} from "./state";
+import { UploadState } from "./state";
 
 import * as storage from "../../storage";
 
 const MEGA = 1024 * 1024;
 
-function* uploadFile({file}: Action.SetFile): IterableIterator<{}> {
+function* uploadFile({ file }: Action.SetFile): IterableIterator<{}> {
     if (file === null) {
         return;
     }
 
-    const {desalt, gen3D, file_size_limit}: UploadState = yield select<State>((s) => s.upload);
+    const { desalt, gen3D, file_size_limit }: UploadState = yield select<State>(s => s.upload);
 
     if (file.size > file_size_limit * MEGA) {
         yield put(Action.SetError(`file size too large (> ${file_size_limit}MB)`));
         return;
     }
     try {
-        const id: string = yield call(api.uploadFile, {file, gen3D, desalt});
+        const id: string = yield call(api.uploadFile, { file, gen3D, desalt });
         yield put(Action.Uploaded(id));
     } catch (e) {
         if (e.response) {
@@ -36,7 +36,7 @@ function* uploadFile({file}: Action.SetFile): IterableIterator<{}> {
     }
 }
 
-function* uploaded({id}: Action.Uploaded): IterableIterator<{}> {
+function* uploaded({ id }: Action.Uploaded): IterableIterator<{}> {
     yield put(Route.ChangeLocation(Route.File(id)));
 }
 
@@ -44,8 +44,8 @@ function* restoreConfig(): IterableIterator<{}> {
     const desalt = storage.loadDesalt();
     const generate3D = storage.loadGenerate3D();
 
-    yield put(Action.ChangeDesalt({enabled: desalt, store: false}));
-    yield put(Action.ChangeGenerate3D({enabled: generate3D, store: false}));
+    yield put(Action.ChangeDesalt({ enabled: desalt, store: false }));
+    yield put(Action.ChangeGenerate3D({ enabled: generate3D, store: false }));
 }
 
 function* setFileSizeLimit(): IterableIterator<{}> {
@@ -57,13 +57,13 @@ function* setFileSizeLimit(): IterableIterator<{}> {
     }
 }
 
-function* storeDesalt({enabled, store}: Action.ChangeDesalt): IterableIterator<{}> {
+function* storeDesalt({ enabled, store }: Action.ChangeDesalt): IterableIterator<{}> {
     if (store) {
         storage.storeDesalt(enabled);
     }
 }
 
-function* storeGenerate3D({enabled, store}: Action.ChangeGenerate3D): IterableIterator<{}> {
+function* storeGenerate3D({ enabled, store }: Action.ChangeGenerate3D): IterableIterator<{}> {
     if (store) {
         storage.storeGenerate3D(enabled);
     }

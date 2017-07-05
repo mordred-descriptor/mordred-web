@@ -7,8 +7,8 @@ export interface ChangeGenerate3D {
     store: boolean;
 }
 
-export function ChangeGenerate3D(p: {enabled: boolean, store: boolean}): ChangeGenerate3D {
-    return {type: CHANGE_GENERATE_3D, ...p};
+export function ChangeGenerate3D(p: { enabled: boolean; store: boolean }): ChangeGenerate3D {
+    return { type: CHANGE_GENERATE_3D, ...p };
 }
 
 export interface ChangeDesalt {
@@ -17,19 +17,19 @@ export interface ChangeDesalt {
     store: boolean;
 }
 
-export function ChangeDesalt(p: {enabled: boolean, store: boolean}): ChangeDesalt {
-    return {type: CHANGE_DESALT, ...p};
+export function ChangeDesalt(p: { enabled: boolean; store: boolean }): ChangeDesalt {
+    return { type: CHANGE_DESALT, ...p };
 }
 
 export const SET_FILE = "UPLOAD:SET_FILE";
 
 export interface SetFile {
     type: typeof SET_FILE;
-    file: File|null;
+    file: File | null;
 }
 
 export function SetFile(file: SetFile["file"]): SetFile {
-    return {type: SET_FILE, file};
+    return { type: SET_FILE, file };
 }
 
 export const UPLOADED = "UPLOAD:UPLOADED";
@@ -40,18 +40,18 @@ export interface Uploaded {
 }
 
 export function Uploaded(id: string): Uploaded {
-    return {type: UPLOADED, id};
+    return { type: UPLOADED, id };
 }
 
 export const SET_ERROR = "UPLOAD:SET_ERROR";
 
 export interface SetError {
     type: typeof SET_ERROR;
-    error: string|null;
+    error: string | null;
 }
 
-export function SetError(error: string|null): SetError {
-    return {type: SET_ERROR, error};
+export function SetError(error: string | null): SetError {
+    return { type: SET_ERROR, error };
 }
 
 export const SET_FILE_SIZE_LIMIT = "UPLOAD:SET_FILE_SIZE_LIMIT";
@@ -62,17 +62,17 @@ export interface SetFileSizeLimit {
 }
 
 export function SetFileSizeLimit(limit: number): SetFileSizeLimit {
-    return {type: SET_FILE_SIZE_LIMIT, limit};
+    return { type: SET_FILE_SIZE_LIMIT, limit };
 }
 
-export type UploadAction
-    = ChangeGenerate3D
+export type UploadAction =
+    | ChangeGenerate3D
     | ChangeDesalt
     | SetFile
     | Uploaded
     | SetError
     | SetFileSizeLimit;
 
-export function isUploadAction(act: {type: string}): act is UploadAction {
+export function isUploadAction(act: { type: string }): act is UploadAction {
     return /^UPLOAD:/.test(act.type);
 }

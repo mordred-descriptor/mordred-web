@@ -31,6 +31,7 @@
     "npm-run-all": "~4.0.2",
     "object-assign": "~4.1.1",
     "postcss-cli": "~4.1.0",
+    "prettier": "~1.5.2",
     "pug-cli": "~1.0.0-alpha6",
     "qs": "~6.4.0",
     "react": "~15.6.1",

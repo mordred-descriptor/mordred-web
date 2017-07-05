@@ -1,19 +1,19 @@
-import {delay} from "redux-saga";
-import {call, put, select, take, takeLatest} from "redux-saga/effects";
+import { delay } from "redux-saga";
+import { call, put, select, take, takeLatest } from "redux-saga/effects";
 
 import * as api from "../../api";
 import * as Route from "../../route";
-import {State} from "../../state";
+import { State } from "../../state";
 import exhaustiveCheck from "../../util/exhaustiveCheck";
 
 import * as Action from "./action";
 
 export function* resultSaga(): IterableIterator<{}> {
-    yield takeLatest<Route.Result>(Route.RESULT, function*({id}): IterableIterator<{}> {
+    yield takeLatest<Route.Result>(Route.RESULT, function*({ id }): IterableIterator<{}> {
         yield put(Action.SetID(id));
     });
 
-    yield takeLatest<Action.SetID>(Action.SET_ID, function*({id}): IterableIterator<{}> {
+    yield takeLatest<Action.SetID>(Action.SET_ID, function*({ id }): IterableIterator<{}> {
         const chan = yield call(api.calcChannel, id);
 
         while (true) {
@@ -27,12 +27,14 @@ export function* resultSaga(): IterableIterator<{}> {
         }
     });
 
-    yield takeLatest<Action.UpdateState>(Action.UPDATE_STATE, function*({done}): IterableIterator<{}> {
+    yield takeLatest<Action.UpdateState>(Action.UPDATE_STATE, function*({
+        done
+    }): IterableIterator<{}> {
         if (!done) {
             return;
         }
 
-        const id: string = yield select<State>((s) => s.result.id);
+        const id: string = yield select<State>(s => s.result.id);
 
         try {
             const resultInfo: api.ResultInfo = yield call(api.getResultInfo, id);
@@ -41,5 +43,4 @@ export function* resultSaga(): IterableIterator<{}> {
             yield put(Action.NotFound());
         }
     });
-
 }

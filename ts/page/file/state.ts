@@ -1,14 +1,14 @@
-import {FileInfoResult, Phase, PHASE_PENDING} from "../../api";
+import { FileInfoResult, Phase, PHASE_PENDING } from "../../api";
 
 export interface Mol {
     name: string;
-    forcefield: string|null;
-    mol?: Blob|null;
+    forcefield: string | null;
+    mol?: Blob | null;
 }
 
 export interface FileState {
-    id: string|null;
-    phase: Phase|null|"not-found";
+    id: string | null;
+    phase: Phase | null | "not-found";
     name: string;
 
     total: number;
@@ -17,8 +17,8 @@ export interface FileState {
     downloadShown: boolean;
     modalShown: boolean;
 
-    descriptors: string[]|null;
-    disabled: {[key: string]: boolean};
+    descriptors: string[] | null;
+    disabled: { [key: string]: boolean };
 
     file_errors: string[];
 
@@ -27,7 +27,7 @@ export interface FileState {
     gen3D: boolean;
 
     current: number;
-    mols: Array<{name: string; forcefield?: string, mol?: Blob|null}>;
+    mols: Array<{ name: string; forcefield?: string; mol?: Blob | null }>;
 }
 
 export const initFile: FileState = {
@@ -47,5 +47,5 @@ export const initFile: FileState = {
     gen3D: false,
 
     current: 0,
-    mols: [],
+    mols: []
 };

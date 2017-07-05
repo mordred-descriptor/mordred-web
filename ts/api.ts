@@ -1,8 +1,8 @@
 import axios from "axios";
-import {AxiosResponse} from "axios";
+import { AxiosResponse } from "axios";
 import * as promise from "es6-promise";
 import * as qs from "qs";
-import {Channel, END, eventChannel} from "redux-saga";
+import { Channel, END, eventChannel } from "redux-saga";
 
 export interface UploadProps {
     file: File;
@@ -10,7 +10,7 @@ export interface UploadProps {
     desalt: boolean;
 }
 
-export async function uploadFile({file, gen3D, desalt}: UploadProps): promise.Promise<string> {
+export async function uploadFile({ file, gen3D, desalt }: UploadProps): promise.Promise<string> {
     const data = new FormData();
     data.append("file", file);
     data.append("gen3D", gen3D.toString());
@@ -20,22 +20,25 @@ export async function uploadFile({file, gen3D, desalt}: UploadProps): promise.Pr
     return r.data.id;
 }
 
-export type ChannelMessage<T> = T & {error: false} | {error: true, payload: any};
+export type ChannelMessage<T> = T & { error: false } | { error: true; payload: any };
 
-export function makeEventSource<T>(url: string, check: (d: T) => boolean): Channel<ChannelMessage<T>> {
-    return eventChannel<ChannelMessage<T>>((emit) => {
+export function makeEventSource<T>(
+    url: string,
+    check: (d: T) => boolean
+): Channel<ChannelMessage<T>> {
+    return eventChannel<ChannelMessage<T>>(emit => {
         const es = new EventSource(url);
 
-        es.onmessage = (msg) => {
+        es.onmessage = msg => {
             const d = JSON.parse(msg.data);
-            emit({...d, error: false});
+            emit({ ...d, error: false });
             if (check(d)) {
                 emit(END);
             }
         };
 
-        es.onerror = (e) => {
-            emit({error: true, payload: e});
+        es.onerror = e => {
+            emit({ error: true, payload: e });
         };
 
         return () => {
@@ -49,8 +52,8 @@ export const PHASE_IN_PROGRESS = "in-progress";
 export const PHASE_DONE = "done";
 export const PHASE_ERROR = "error";
 
-export type Phase
-    = typeof PHASE_PENDING
+export type Phase =
+    | typeof PHASE_PENDING
     | typeof PHASE_IN_PROGRESS
     | typeof PHASE_DONE
     | typeof PHASE_ERROR;
@@ -67,7 +70,7 @@ export type FileChannelMessage = ChannelMessage<FileChannelMessagePayload>;
 export function fileChannel(id: string): Channel<FileChannelMessage> {
     return makeEventSource<FileChannelMessagePayload>(
         `/api/file/${id}`,
-        (d) => d.phase === PHASE_DONE || d.phase === PHASE_ERROR,
+        d => d.phase === PHASE_DONE || d.phase === PHASE_ERROR
     );
 }
 
@@ -82,7 +85,7 @@ export interface FileInfoResult {
     is3D: boolean;
     desalt: boolean;
     phase: Phase;
-    mols: Array<{name: string, forcefield: string}>;
+    mols: Array<{ name: string; forcefield: string }>;
     errors: string[];
 }
 
@@ -92,18 +95,18 @@ export async function getFileInfo(id: string): promise.Promise<FileInfoResult> {
 }
 
 export async function getPNG(id: string, nth: number): promise.Promise<Blob> {
-    const {data} = await axios.get(`/api/file/${id}/${nth}.png`, {responseType: "blob"});
+    const { data } = await axios.get(`/api/file/${id}/${nth}.png`, { responseType: "blob" });
     return data;
 }
 
 export async function getMol(id: string, nth: number): promise.Promise<Blob> {
-    const {data} = await axios.get(`/api/file/${id}/${nth}.mol`, {responseType: "blob"});
+    const { data } = await axios.get(`/api/file/${id}/${nth}.mol`, { responseType: "blob" });
     return data;
 }
 
 export async function startCalc(id: string, disabled: string[]): promise.Promise<string> {
-    const params = qs.stringify({disabled}, {indices: false});
-    const {data} = await axios.post(`/api/calc/${id}`, params);
+    const params = qs.stringify({ disabled }, { indices: false });
+    const { data } = await axios.post(`/api/calc/${id}`, params);
     return data.id;
 }
 
@@ -117,27 +120,27 @@ export interface CalcChannelMessagePayload {
 export type CalcChannelMessage = ChannelMessage<CalcChannelMessagePayload>;
 
 export function calcChannel(id: string): Channel<CalcChannelMessage> {
-    return makeEventSource<CalcChannelMessagePayload>(`/api/calc/${id}`, (d) => d.done);
+    return makeEventSource<CalcChannelMessagePayload>(`/api/calc/${id}`, d => d.done);
 }
 
 export interface DescriptorInfo {
     name: string;
-    max: number|null;
-    min: number|null;
-    mean: number|null;
-    std: number|null;
-    [key: string]: string|number|null;
+    max: number | null;
+    min: number | null;
+    mean: number | null;
+    std: number | null;
+    [key: string]: string | number | null;
 }
 
 export interface ResultInfo {
     file_name: string;
     file_id: string;
-    errors: Array<{nth: number|null, name: string|null, error: string}>;
+    errors: Array<{ nth: number | null; name: string | null; error: string }>;
     descriptors: DescriptorInfo[];
 }
 
 export async function getResultInfo(id: string): promise.Promise<ResultInfo> {
-    const {data} = await axios.get(`/api/calc/${id}`);
+    const { data } = await axios.get(`/api/calc/${id}`);
     return data;
 }
 
@@ -146,6 +149,6 @@ export interface AppInfo {
 }
 
 export async function getAppInfo(): promise.Promise<AppInfo> {
-    const {data} = await axios.get("/api/info");
+    const { data } = await axios.get("/api/info");
     return data;
 }
