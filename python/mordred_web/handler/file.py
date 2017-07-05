@@ -32,9 +32,9 @@ def read_smiles(bs):
 
         mol = Chem.MolFromSmiles(smi)
         if mol is None:
-            yield ValueError("SMILES parse failed on line {}: {}".format(
-                i, line.decode("UTF-8").strip()),
-            ), None
+            yield ValueError(
+                "SMILES parse failed on line {}: {}".format(
+                    i, line.decode("UTF-8").strip()), ), None
             continue
         yield mol, name.decode("UTF-8")
 
@@ -44,9 +44,11 @@ def read_sdf(bs):
         tmp.write(bs)
         tmp.flush()
 
-        for i, mol in enumerate(Chem.SDMolSupplier(tmp.name, removeHs=False), 1):
+        for i, mol in enumerate(
+                Chem.SDMolSupplier(tmp.name, removeHs=False), 1):
             if mol is None:
-                yield ValueError("SDF parser failed on {}-th molecule".format(i)), None
+                yield ValueError(
+                    "SDF parser failed on {}-th molecule".format(i)), None
                 continue
 
             if mol.HasProp("_Name"):
@@ -58,8 +60,8 @@ def read_sdf(bs):
 
 
 class ParseTask(SingleTask):
-    def __init__(self, text_id, filename, body, gen3D, desalt,
-                 conn, reader, parse_timeout, prepare_timeout, molecule_limit):
+    def __init__(self, text_id, filename, body, gen3D, desalt, conn, reader,
+                 parse_timeout, prepare_timeout, molecule_limit):
 
         self.conn = conn
         self.text_id = text_id
@@ -79,24 +81,22 @@ class ParseTask(SingleTask):
             cur.execute("""
             INSERT INTO file (text_id, name, created_at, gen3D, is3D, desalt, phase)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (self.text_id, self.filename, int(time.time()),
-                  self.gen3D, is3D, self.desalt, Phase.PENDING.value))
+            """, (self.text_id, self.filename, int(time.time()), self.gen3D,
+                  is3D, self.desalt, Phase.PENDING.value))
             self.file_id = cur.lastrowid
 
     def on_task_start(self):
         with transaction(self.conn) as cur:
             cur.execute(
                 "UPDATE file SET phase = ? WHERE id = ?",
-                (Phase.IN_PROGRESS.value, self.file_id),
-            )
+                (Phase.IN_PROGRESS.value, self.file_id), )
 
     def on_job_end(self, job, v):
         self.mols, errors = v
         with transaction(self.conn) as cur:
             cur.execute(
                 "UPDATE file SET total = ? WHERE id = ?",
-                (len(self.mols), self.file_id),
-            )
+                (len(self.mols), self.file_id), )
             for err in errors:
                 cur.execute("""
                 INSERT INTO file_error (file_id, error)
@@ -111,13 +111,11 @@ class ParseTask(SingleTask):
         with transaction(self.conn) as cur:
             cur.execute(
                 "UPDATE file SET phase = ?, total = 0 WHERE id = ?",
-                (Phase.ERROR.value, self.file_id,),
-            )
+                (Phase.ERROR.value, self.file_id, ), )
 
             cur.execute(
                 "INSERT INTO file_error (file_id, error) VALUES (?, ?)",
-                (self.file_id, "parse error: {}".format(se)),
-            )
+                (self.file_id, "parse error: {}".format(se)), )
 
     def next_task(self):
         if not hasattr(self, "mols"):
@@ -129,15 +127,13 @@ class ParseTask(SingleTask):
             gen3D=self.gen3D,
             desalt=self.desalt,
             conn=self.conn,
-            timeout=self.prepare_timeout,
-        )
+            timeout=self.prepare_timeout, )
 
     def job(self):
         return ParseJob(
             body=self.body,
             reader=self.reader,
-            molecule_limit=self.molecule_limit,
-        )
+            molecule_limit=self.molecule_limit, )
 
 
 class ParseJob(object):
@@ -151,9 +147,9 @@ class ParseJob(object):
         for i, (mol, name) in enumerate(self.reader(self.body)):
             if self.molecule_limit is not None and i >= self.molecule_limit:
                 errors.append(
-                    "number of molecule limit: using first {} molecules".format(
-                        self.molecule_limit,
-                    ))
+                    "number of molecule limit: using first {} molecules".
+                    format(
+                        self.molecule_limit, ))
                 break
 
             if not isinstance(mol, Chem.Mol):
@@ -197,19 +193,16 @@ class PrepareTask(Task):
         with transaction(self.conn) as cur:
             cur.execute(
                 "UPDATE file SET total = total - 1 WHERE id = ?",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             cur.execute(
                 "INSERT INTO file_error (file_id, error) VALUES (?, ?)",
-                (self.file_id, "{}: prepare: {}".format(job.name, se)),
-            )
+                (self.file_id, "{}: prepare: {}".format(job.name, se)), )
 
     def on_task_end(self):
         with transaction(self.conn) as cur:
             cur.execute(
                 "UPDATE file SET phase = ? WHERE id = ?",
-                (Phase.DONE.value, self.file_id),
-            )
+                (Phase.DONE.value, self.file_id), )
 
     def __next__(self):
         if len(self.mols) == 0:
@@ -310,8 +303,7 @@ class FileHandler(RequestHandler):
             reader=reader,
             parse_timeout=self.application.parse_timeout,
             prepare_timeout=self.application.prepare_timeout,
-            molecule_limit=self.application.molecule_limit,
-        )
+            molecule_limit=self.application.molecule_limit, )
         task.insert_file()
         self.put(task)
 
@@ -321,7 +313,8 @@ class FileHandler(RequestHandler):
 class FileIdHandler(SSEHandler):
     def get(self, id):
         with self.transaction() as cur:
-            cur.execute("SELECT id, name FROM file WHERE text_id = ? LIMIT 1", (id,))
+            cur.execute("SELECT id, name FROM file WHERE text_id = ? LIMIT 1",
+                        (id, ))
             result = cur.fetchone()
 
         if result is None:
@@ -347,11 +340,12 @@ class FileIdHandler(SSEHandler):
                 FROM file LEFT OUTER JOIN molecule ON file.id = molecule.file_id
                 WHERE file.id = ?
                 LIMIT 1
-                """, (self.file_id,))
+                """, (self.file_id, ))
 
                 total, phase, current = cur.fetchone()
 
-            yield self.publish(total=total, name=self.filename, phase=phase, current=current)
+            yield self.publish(
+                total=total, name=self.filename, phase=phase, current=current)
             if phase == Phase.ERROR.value or phase == Phase.DONE.value:
                 raise web.Finish
             yield gen.sleep(0.5)
@@ -360,20 +354,17 @@ class FileIdHandler(SSEHandler):
         with self.transaction() as cur:
             cur.execute(
                 "SELECT name, gen3D, is3D, desalt, phase FROM file WHERE id = ? LIMIT 1",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             name, gen3D, is3D, desalt, phase = cur.fetchone()
 
             cur.execute(
                 "SELECT name, forcefield FROM molecule WHERE file_id = ?",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             mols = [{"name": n, "forcefield": f} for n, f in cur.fetchall()]
 
             cur.execute(
                 "SELECT error FROM file_error WHERE file_id = ?",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             errors = [e for e, in cur.fetchall()]
 
         self.json(
@@ -383,8 +374,7 @@ class FileIdHandler(SSEHandler):
             is3D=bool(is3D),
             mols=mols,
             errors=errors,
-            phase=phase,
-        )
+            phase=phase, )
 
 
 class FileIdExtHandler(RequestHandler):
@@ -395,7 +385,8 @@ class FileIdExtHandler(RequestHandler):
             self.fail(400, "unknown extension")
 
         with self.transaction() as cur:
-            cur.execute("SELECT id FROM FILE WHERE text_id = ? LIMIT 1", (text_id,))
+            cur.execute("SELECT id FROM FILE WHERE text_id = ? LIMIT 1",
+                        (text_id, ))
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "not found")
@@ -406,7 +397,7 @@ class FileIdExtHandler(RequestHandler):
             SELECT name, mol, forcefield
             FROM molecule
             WHERE file_id = ?
-            """, (file_id,))
+            """, (file_id, ))
 
             if ext == "sdf":
                 self.get_sdf(cur)

@@ -27,8 +27,8 @@ class PrepareTask(SingleTask):
         with transaction(self.conn) as cur:
             cur.execute(
                 "INSERT INTO calc_error (calc_id, error) VALUES (?, ?)",
-                (self.calc_id, "BUG: calculator prepare failed: {!r}".format(e)),
-            )
+                (self.calc_id,
+                 "BUG: calculator prepare failed: {!r}".format(e)), )
         self.error = True
 
     def on_job_end(self, job, calc):
@@ -39,8 +39,7 @@ class PrepareTask(SingleTask):
             for desc in calc.descriptors:
                 cur.execute(
                     "INSERT INTO descriptor (calc_id, name) VALUES (?, ?)",
-                    (self.calc_id, str(desc)),
-                )
+                    (self.calc_id, str(desc)), )
                 self.desc_ids.append(cur.lastrowid)
 
     def next_task(self):
@@ -48,10 +47,13 @@ class PrepareTask(SingleTask):
             return
 
         task = CalcTask(
-            file_id=self.file_id, calc_id=self.calc_id, desc_ids=self.desc_ids,
-            total=self.total, calc=self.calc, conn=self.conn,
-            timeout=self.calc_timeout,
-        )
+            file_id=self.file_id,
+            calc_id=self.calc_id,
+            desc_ids=self.desc_ids,
+            total=self.total,
+            calc=self.calc,
+            conn=self.conn,
+            timeout=self.calc_timeout, )
         task.get_mols()
         return task
 
@@ -65,10 +67,8 @@ class PrepareWorker(object):
 
     def __call__(self):
         calc = Calculator(
-            getattr(descriptors, d)
-            for d in descriptors.__all__
-            if d not in self.disabled
-        )
+            getattr(descriptors, d) for d in descriptors.__all__
+            if d not in self.disabled)
 
         return calc
 
@@ -95,8 +95,7 @@ class CalcTask(Task):
         with transaction(self.conn) as cur:
             cur.execute(
                 "SELECT id, mol FROM molecule WHERE file_id = ?",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             self.mols = cur.fetchall()
 
     def on_job_error(self, job, e):
@@ -107,11 +106,11 @@ class CalcTask(Task):
         with transaction(self.conn) as cur:
             cur.execute(
                 "INSERT INTO calc_error (calc_id, molecule_id, error) VALUES (?, ?, ?)",
-                (self.calc_id, job.mol_id, se),
-            )
+                (self.calc_id, job.mol_id, se), )
 
     def on_task_end(self):
-        std = ((None if k == 0 else math.sqrt(S / k)) for S, k in zip(self.S, self.k))
+        std = ((None if k == 0 else math.sqrt(S / k))
+               for S, k in zip(self.S, self.k))
         results = zip(self.desc_ids, self.min, self.max, self.mean, std)
 
         with transaction(self.conn) as cur:
@@ -121,10 +120,10 @@ class CalcTask(Task):
                     UPDATE descriptor
                     SET min = ?, max = ?, mean = ?, std = ?
                     WHERE id = ?""",
-                    (vmin, vmax, mean, std, desc_id),
-                )
+                    (vmin, vmax, mean, std, desc_id), )
 
-            cur.execute("UPDATE calc SET done = 1 WHERE id = ?", (self.calc_id,))
+            cur.execute("UPDATE calc SET done = 1 WHERE id = ?",
+                        (self.calc_id, ))
 
     def on_job_end(self, job, results):
 
@@ -160,8 +159,7 @@ class CalcTask(Task):
 
             cur.execute(
                 "UPDATE calc SET current = current + 1 WHERE id = ?",
-                (self.calc_id,),
-            )
+                (self.calc_id, ), )
 
     def __next__(self):
         if len(self.mols) == 0:
@@ -185,8 +183,7 @@ class CalcIdHandler(SSEHandler):
         with self.transaction() as cur:
             cur.execute(
                 "SELECT id, name, total FROM file WHERE text_id = ? LIMIT 1",
-                (file_text_id,),
-            )
+                (file_text_id, ), )
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "no id")
@@ -197,23 +194,28 @@ class CalcIdHandler(SSEHandler):
 
             cur.execute("""
             INSERT INTO calc (file_id, text_id, created_at, current, done)
-            VALUES (?, ?, ?, 0, 0)""", (file_id, calc_text_id, int(time.time())))
+            VALUES (?, ?, ?, 0, 0)""", (file_id, calc_text_id,
+                                        int(time.time())))
 
             calc_id = cur.lastrowid
 
         disabled = set(self.get_arguments("disabled"))
         task = PrepareTask(
-            calc_id=calc_id, file_id=file_id,
-            total=total, disabled=disabled, conn=self.db,
-            calc_timeout=self.application.calc_timeout,
-        )
+            calc_id=calc_id,
+            file_id=file_id,
+            total=total,
+            disabled=disabled,
+            conn=self.db,
+            calc_timeout=self.application.calc_timeout, )
         self.put(task)
 
         self.json(id=calc_text_id)
 
     def get(self, calc_text_id):
         with self.transaction() as cur:
-            cur.execute("SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1", (calc_text_id,))
+            cur.execute(
+                "SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1",
+                (calc_text_id, ))
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "no id")
@@ -222,8 +224,7 @@ class CalcIdHandler(SSEHandler):
 
             cur.execute(
                 "SELECT name, total, text_id FROM file WHERE id = ? LIMIT 1",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             self.file_name, self.total, file_text_id = cur.fetchone()
 
         accept, _ = parse_header(self.request.headers["Accept"])
@@ -240,15 +241,15 @@ class CalcIdHandler(SSEHandler):
             with self.transaction() as cur:
                 cur.execute(
                     "SELECT done, current FROM calc WHERE id = ? LIMIT 1",
-                    (self.calc_id,),
-                )
+                    (self.calc_id, ), )
 
                 done, current = cur.fetchone()
 
             yield self.publish(
-                total=self.total, name=self.file_name,
-                done=bool(done), current=current,
-            )
+                total=self.total,
+                name=self.file_name,
+                done=bool(done),
+                current=current, )
 
             if done:
                 raise web.Finish
@@ -258,8 +259,7 @@ class CalcIdHandler(SSEHandler):
         with self.transaction() as cur:
             cur.execute(
                 "SELECT name, text_id FROM file WHERE id = ? LIMIT 1",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
 
             result = cur.fetchone()
             if result is None:
@@ -271,24 +271,28 @@ class CalcIdHandler(SSEHandler):
                     ON calc_error.molecule_id = molecule.id
                 WHERE calc_error.calc_id = ?
                 ORDER BY molecule.nth
-            """, (self.calc_id,))
+            """, (self.calc_id, ))
 
-            errors = [
-                {"nth": nth, "name": name, "error": error}
-                for nth, name, error in cur.fetchall()
-            ]
+            errors = [{
+                "error": error,
+                "name": name,
+                "nth": nth,
+            } for nth, name, error in cur.fetchall()]
 
             cur.execute("""
                 SELECT name, max, min, mean, std
                 FROM descriptor
                 WHERE calc_id = ?
                 ORDER BY id
-            """, (self.calc_id,))
+            """, (self.calc_id, ))
 
-            descs = [
-                {"name": name, "max": vmax, "min": vmin, "mean": mean, "std": std}
-                for name, vmax, vmin, mean, std in cur.fetchall()
-            ]
+            descs = [{
+                "max": vmax,
+                "mean": mean,
+                "min": vmin,
+                "name": name,
+                "std": std,
+            } for name, vmax, vmin, mean, std in cur.fetchall()]
 
             file_name, file_text_id = result
 
@@ -296,8 +300,7 @@ class CalcIdHandler(SSEHandler):
                 file_name=file_name,
                 file_id=file_text_id,
                 errors=errors,
-                descriptors=descs,
-            )
+                descriptors=descs, )
 
 
 class CalcIdExtHandler(RequestHandler):
@@ -308,7 +311,9 @@ class CalcIdExtHandler(RequestHandler):
             self.fail(400, "unknown extension")
 
         with self.transaction() as cur:
-            cur.execute("SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1", (calc_text_id,))
+            cur.execute(
+                "SELECT id, file_id FROM calc WHERE text_id = ? LIMIT 1",
+                (calc_text_id, ))
             result = cur.fetchone()
             if result is None:
                 self.fail(404, "no id")
@@ -317,14 +322,12 @@ class CalcIdExtHandler(RequestHandler):
 
             cur.execute(
                 "SELECT id, name FROM molecule WHERE file_id = ? ORDER BY nth",
-                (self.file_id,),
-            )
+                (self.file_id, ), )
             self.molecules = cur.fetchall()
 
             cur.execute(
                 "SELECT name FROM descriptor WHERE calc_id = ? ORDER BY id",
-                (self.calc_id,),
-            )
+                (self.calc_id, ), )
             self.descriptors = [d for d, in cur.fetchall()]
 
             if ext == "csv":
@@ -345,5 +348,6 @@ class CalcIdExtHandler(RequestHandler):
                 ORDER BY descriptor_id
                 """, (self.calc_id, mol_id))
 
-            self.write(",".join(("" if v is None else str(v)) for v, in cur.fetchall()))
+            self.write(",".join(("" if v is None else str(v))
+                                for v, in cur.fetchall()))
             self.write("\n")
