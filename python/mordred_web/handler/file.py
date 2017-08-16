@@ -283,7 +283,7 @@ class FileHandler(RequestHandler):
         if len(f.body) > limit_b:
             self.fail(400, "file size too large (> {}MB)".format(limit_mb))
 
-        ext = os.path.splitext(f.filename)[-1]
+        ext = os.path.splitext(f.filename)[-1].lower()
 
         if ext in self.SMI_EXT:
             reader = read_smiles
@@ -381,6 +381,7 @@ class FileIdExtHandler(RequestHandler):
     EXTS = {"sdf", "smi"}
 
     def get(self, text_id, ext):
+        ext = ext.lower()
         if ext not in self.EXTS:
             self.fail(400, "unknown extension")
 
@@ -441,6 +442,7 @@ class FileIdNthExtHandler(RequestHandler):
     EXTS = {"png", "mol"}
 
     def get(self, id, nth, ext):
+        ext = ext.lower()
         if ext not in self.EXTS:
             self.fail(400, "unknown extension")
 

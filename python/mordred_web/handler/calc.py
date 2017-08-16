@@ -307,6 +307,7 @@ class CalcIdExtHandler(RequestHandler):
     EXTS = {"csv"}
 
     def get(self, calc_text_id, ext):
+        ext = ext.lower()
         if ext not in self.EXTS:
             self.fail(400, "unknown extension")
 
