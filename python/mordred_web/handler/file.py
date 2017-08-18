@@ -144,6 +144,7 @@ class ParseJob(object):
 
     def __call__(self):
         mols, errors = [], []
+        nth = 0
         for i, (mol, name) in enumerate(self.reader(self.body)):
             if self.molecule_limit is not None and i >= self.molecule_limit:
                 errors.append(
@@ -156,7 +157,8 @@ class ParseJob(object):
                 errors.append(mol)
                 continue
 
-            mols.append((mol, name.strip()))
+            mols.append((mol, nth, name.strip()))
+            nth += 1
 
         return mols, errors
 
@@ -168,11 +170,10 @@ class PrepareTask(Task):
         self.gen3D = gen3D
         self.desalt = desalt
         self.conn = conn
-        self.i = 0
         self.timeout = timeout
 
     def on_job_end(self, job, result):
-        uff, mol, name = result
+        uff, mol, nth, name = result
         if self.gen3D:
             ff = "UFF" if uff else "MMFF"
         else:
@@ -181,9 +182,7 @@ class PrepareTask(Task):
             cur.execute("""
             INSERT INTO molecule (file_id, nth, forcefield, name, mol)
             VALUES (?, ?, ?, ?, ?)
-            """, (self.file_id, self.i, ff, name, mol))
-
-        self.i += 1
+            """, (self.file_id, nth, ff, name, mol))
 
     def on_job_error(self, job, err):
         se = str(err)
@@ -208,8 +207,8 @@ class PrepareTask(Task):
         if len(self.mols) == 0:
             raise StopIteration
 
-        (mol, name), self.mols = self.mols[0], self.mols[1:]
-        return PrepareJob(mol, name, self.gen3D, self.desalt)
+        (mol, nth, name), self.mols = self.mols[0], self.mols[1:]
+        return PrepareJob(mol, nth, name, self.gen3D, self.desalt)
 
 
 def desalt(mol):
@@ -247,8 +246,9 @@ def gen3D(mol):
 
 
 class PrepareJob(object):
-    def __init__(self, mol, name, gen3D, desalt):
+    def __init__(self, mol, nth, name, gen3D, desalt):
         self.mol = mol
+        self.nth = nth
         self.name = name
         self.gen3D = gen3D
         self.desalt = desalt
@@ -260,9 +260,9 @@ class PrepareJob(object):
 
         if self.gen3D:
             uff, mol = gen3D(mol)
-            return uff, mol, self.name
+            return uff, mol, self.nth, self.name
         else:
-            return None, mol, self.name
+            return None, mol, self.nth, self.name
 
 
 class FileHandler(RequestHandler):
@@ -358,12 +358,12 @@ class FileIdHandler(SSEHandler):
             name, gen3D, is3D, desalt, phase = cur.fetchone()
 
             cur.execute(
-                "SELECT name, forcefield FROM molecule WHERE file_id = ?",
+                "SELECT name, forcefield FROM molecule WHERE file_id = ? ORDER BY nth",
                 (self.file_id, ), )
             mols = [{"name": n, "forcefield": f} for n, f in cur.fetchall()]
 
             cur.execute(
-                "SELECT error FROM file_error WHERE file_id = ?",
+                "SELECT error FROM file_error WHERE file_id = ? ORDER BY id",
                 (self.file_id, ), )
             errors = [e for e, in cur.fetchall()]
 
@@ -398,6 +398,7 @@ class FileIdExtHandler(RequestHandler):
             SELECT name, mol, forcefield
             FROM molecule
             WHERE file_id = ?
+            ORDER BY nth
             """, (file_id, ))
 
             if ext == "sdf":
