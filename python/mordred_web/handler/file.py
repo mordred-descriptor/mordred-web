@@ -435,7 +435,7 @@ class FileIdExtHandler(RequestHandler):
                 break
 
             name, mol, _ = result
-            self.write("{} {}\n".format(Chem.MolToSmiles(mol), name))
+            self.write("{} {}\n".format(Chem.MolToSmiles(Chem.RemoveHs(mol)), name))
 
 
 class FileIdNthExtHandler(RequestHandler):

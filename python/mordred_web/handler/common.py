@@ -18,7 +18,7 @@ class RequestHandler(web.RequestHandler):
         if isinstance(v, bool):
             return v
 
-        if v.lower() in ["false", "f"]:
+        if v.lower() in {"false", "f"}:
             return False
 
         return True
