@@ -2,6 +2,7 @@ import * as React from "react";
 
 import * as Route from "../../route";
 import { ViewState } from "../../util/dispatch";
+import { HelpButton } from "../../view/button";
 import { Footer } from "../../view/footer";
 import { Switch } from "../../view/switch";
 import * as Action from "./action";
@@ -10,6 +11,14 @@ import { UploadState } from "./state";
 export function UploadView(state: ViewState<UploadState, Action.UploadAction>) {
     return (
         <div className="upload-page page centered">
+            <div className="top-bar">
+                <div>
+                    <h2>&nbsp;</h2>
+                </div>
+                <div>
+                    <HelpButton />
+                </div>
+            </div>
             <div className="empty">
                 <h2 className="empty-title">Mordred Web UI</h2>
                 <p className="empty-subtitle">Descriptor calculator</p>

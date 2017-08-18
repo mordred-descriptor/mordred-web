@@ -16,7 +16,7 @@ import { ResultState } from "./state";
 import * as api from "../../api";
 import * as Route from "../../route";
 import { ViewState } from "../../util/dispatch";
-import { BackButton, HomeButton } from "../../view/button";
+import { BackButton, HelpButton, HomeButton } from "../../view/button";
 import { Dropdown } from "../../view/dropdown";
 import { ErrorView } from "../../view/error-view";
 import { Footer } from "../../view/footer";
@@ -208,6 +208,7 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
                     <HomeButton
                         onClick={() => state.dispatch(Route.ChangeLocation(Route.Upload()))}
                     />
+                    <HelpButton />
                 </div>
             </div>
 
