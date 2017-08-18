@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='mordred-web',
@@ -35,6 +35,7 @@ setup(
         'six>=1.10',
         'loky>=1.0',
         'Pillow>=4.1'
+        'openpyxl>=2.4',
     ],
 
 )

@@ -191,13 +191,6 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
                     <h2>
                         {state.name}
                     </h2>
-                    <DownloadDropdown
-                        active={state.downloadShown}
-                        onClickOutside={() => state.dispatch(Action.SetDownloadShown(false))}
-                        onButtonClick={() =>
-                            state.dispatch(Action.SetDownloadShown(!state.downloadShown))}
-                        csvUrl={`/api/calc/${state.id}.csv`}
-                    />
                 </div>
 
                 <div>
@@ -226,41 +219,78 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
                 );
             })}
 
-            <h5 className="result-table-caption">Summary</h5>
-            <AutoSizer disableHeight>
-                {({ width }) =>
-                    <Table
-                        className="table"
-                        height={300}
-                        rowHeight={50}
-                        headerHeight={50}
-                        rowCount={state.descriptorInfo.length}
-                        width={width}
-                        rowGetter={({ index }) => state.descriptorInfo[index]}
-                        sort={v => state.dispatch(Action.ChangeSort(v as any))}
-                        sortBy={state.sortBy}
-                        sortDirection={state.sortDirection}
-                    >
-                        <Column
-                            label="#"
-                            dataKey="index"
-                            headerRenderer={headerRenderer}
-                            width={40}
-                            minWidth={40}
-                        />
-                        <Column
-                            dataKey="name"
-                            disableSort
-                            headerRenderer={headerRenderer}
-                            flexGrow={1}
-                            width={100}
-                        />
-                        <Column dataKey="min" {...aggrProps} />
-                        <Column dataKey="max" {...aggrProps} />
-                        <Column dataKey="mean" {...aggrProps} />
-                        <Column dataKey="std" {...aggrProps} />
-                    </Table>}
-            </AutoSizer>
+            <div className="result-section">
+                <h5 className="header">Summary</h5>
+                <AutoSizer disableHeight>
+                    {({ width }) =>
+                        <Table
+                            className="table"
+                            height={300}
+                            rowHeight={50}
+                            headerHeight={50}
+                            rowCount={state.descriptorInfo.length}
+                            width={width}
+                            rowGetter={({ index }) => state.descriptorInfo[index]}
+                            sort={v => state.dispatch(Action.ChangeSort(v as any))}
+                            sortBy={state.sortBy}
+                            sortDirection={state.sortDirection}
+                        >
+                            <Column
+                                label="#"
+                                dataKey="index"
+                                headerRenderer={headerRenderer}
+                                width={40}
+                                minWidth={40}
+                            />
+                            <Column
+                                dataKey="name"
+                                disableSort
+                                headerRenderer={headerRenderer}
+                                flexGrow={1}
+                                width={100}
+                            />
+                            <Column dataKey="min" {...aggrProps} />
+                            <Column dataKey="max" {...aggrProps} />
+                            <Column dataKey="mean" {...aggrProps} />
+                            <Column dataKey="std" {...aggrProps} />
+                        </Table>}
+                </AutoSizer>
+            </div>
+
+            <div className="result-section">
+                <h5 className="header">Downloads</h5>
+                <div className="download-buttons-wrapper">
+                    <div className="download-buttons">
+                        <div className="download-group">
+                            <div className="download-label">All descriptor values</div>
+                            <div className="btn-group">
+                                <a
+                                    className="btn btn-sm btn-primary"
+                                    href={`/api/calc/${state.id}.csv`}
+                                >
+                                    csv
+                                </a>
+                                <a
+                                    className="btn btn-sm btn-primary"
+                                    href={`/api/calc/${state.id}.xlsx`}
+                                >
+                                    xlsx
+                                </a>
+                            </div>
+                        </div>
+                        <div className="download-group">
+                            <div className="download-label">Error log</div>
+                            <a
+                                className="btn btn-sm btn-primary"
+                                href={`/api/calc/${state.id}.txt`}
+                                download={`${state.id}.txt`}
+                            >
+                                txt
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <Footer />
         </div>
