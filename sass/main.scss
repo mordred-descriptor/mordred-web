@@ -79,7 +79,6 @@ footer {
 .upload-page {
     .empty {
         background-color: transparent;
-        padding-top: 10rem;
 
         @media screen and (max-width: 400px) {
             .empty-title {
@@ -242,6 +241,31 @@ footer {
     margin-top: 2rem;
 }
 
-.result-table-caption {
-    margin: 1.5rem 0 0 0;
+.result-section {
+    margin-bottom: 4rem;
+
+    .header {
+        margin: 1.5rem 0 0 0;
+    }
+
+    .download-buttons-wrapper {
+        display: flex;
+        justify-content: center;
+        .download-buttons {
+            .download-group {
+                display: flex;
+                margin: 0.5rem;
+                .download-label {
+                    width: 20rem;
+                }
+                a {
+                    min-width: 4rem;
+                }
+            }
+        }
+    }
+}
+
+.button-container {
+    margin-top: 1rem;
 }

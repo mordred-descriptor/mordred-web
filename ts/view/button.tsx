@@ -39,3 +39,16 @@ export function HomeButton(props: ButtonProps) {
         </button>
     );
 }
+
+export function HelpButton() {
+    return (
+        <a
+            className="btn btn-link tooltip tooltip-left"
+            data-tooltip="help"
+            href="https://github.com/mordred-descriptor/mordred-web/tree/master/help/index.md"
+            target="_blank"
+        >
+            <i className="fa fa-lg fa-question" />
+        </a>
+    );
+}

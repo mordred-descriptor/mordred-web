@@ -6,7 +6,7 @@ import { FileState } from "./state";
 import * as api from "../../api";
 import * as Route from "../../route";
 import { ViewState } from "../../util/dispatch";
-import { BackButton, ConfigButton } from "../../view/button";
+import { BackButton, ConfigButton, HelpButton } from "../../view/button";
 import { ErrorView } from "../../view/error-view";
 import { Footer } from "../../view/footer";
 import { LoadingView } from "../../view/loading-page";
@@ -66,6 +66,7 @@ function MainFileView(props: ViewState<FileState, Action.FileAction>) {
                         onClick={() => props.dispatch(Route.ChangeLocation(Route.Upload()))}
                     />
                     <ConfigButton onClick={() => props.dispatch(Action.SetModalShown(true))} />
+                    <HelpButton />
                 </div>
             </div>
 

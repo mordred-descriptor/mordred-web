@@ -2,6 +2,7 @@ import math
 import time
 from cgi import parse_header
 
+import openpyxl
 from mordred import Calculator, descriptors
 from tornado import gen, web
 from mordred.error import MissingValueBase
@@ -94,7 +95,7 @@ class CalcTask(Task):
     def get_mols(self):
         with transaction(self.conn) as cur:
             cur.execute(
-                "SELECT id, mol FROM molecule WHERE file_id = ?",
+                "SELECT id, mol FROM molecule WHERE file_id = ?",  # not require ORDER BY
                 (self.file_id, ), )
             self.mols = cur.fetchall()
 
@@ -304,7 +305,7 @@ class CalcIdHandler(SSEHandler):
 
 
 class CalcIdExtHandler(RequestHandler):
-    EXTS = {"csv"}
+    EXTS = {"csv", "xlsx", "txt"}
 
     def get(self, calc_text_id, ext):
         ext = ext.lower()
@@ -333,6 +334,43 @@ class CalcIdExtHandler(RequestHandler):
 
             if ext == "csv":
                 return self.get_csv(cur)
+            elif ext == "xlsx":
+                return self.get_xlsx(cur)
+            elif ext == "txt":
+                return self.get_error_log(cur)
+
+    def get_error_log(self, cur):
+        self.set_header("content-type", "text/plain")
+
+        for mol_id, name in self.molecules:
+            cur.execute("""
+                SELECT error
+                FROM calc_error
+                WHERE calc_id = ? AND molecule_id = ?
+                ORDER BY id
+            """, (self.calc_id, mol_id))
+
+            for e, in cur.fetchall():
+                self.write("{}: {}\n".format(name, e))
+
+            cur.execute("""
+                SELECT descriptor.name, result.error
+                FROM result JOIN descriptor ON result.descriptor_id = descriptor.id
+                WHERE result.error IS NOT NULL AND result.calc_id = ? AND result.molecule_id = ?
+                ORDER BY descriptor_id
+            """, (self.calc_id, mol_id))
+
+            for n, e in cur.fetchall():
+                self.write('{}:{}: {}\n'.format(name, n, e))
+
+    def _get_value_by_mol_id(self, cur, mol_id):
+        cur.execute("""
+            SELECT value
+            FROM result
+            WHERE calc_id = ? AND molecule_id = ?
+            ORDER BY descriptor_id
+            """, (self.calc_id, mol_id))
+        return cur.fetchall()
 
     def get_csv(self, cur):
         self.set_header("content-type", "text/csv")
@@ -342,13 +380,19 @@ class CalcIdExtHandler(RequestHandler):
 
         for mol_id, name in self.molecules:
             self.write(name + ",")
-            cur.execute("""
-                SELECT value
-                FROM result
-                WHERE calc_id = ? AND molecule_id = ?
-                ORDER BY descriptor_id
-                """, (self.calc_id, mol_id))
-
-            self.write(",".join(("" if v is None else str(v))
-                                for v, in cur.fetchall()))
+            result = self._get_value_by_mol_id(cur, mol_id)
+            self.write(",".join(("" if v is None else str(v)) for v, in result))
             self.write("\n")
+
+    def get_xlsx(self, cur):
+        self.set_header(
+            "content-type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["name"] + self.descriptors)
+
+        for mol_id, name in self.molecules:
+            ws.append([name] + [v for v, in self._get_value_by_mol_id(cur, mol_id)])
+
+        self.write(openpyxl.writer.excel.save_virtual_workbook(wb))

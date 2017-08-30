@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='mordred-web',
-    version='0.2.1',
+    version='0.3.0',
     description='molecular descriptor calculator web UI',
     license='BSD3',
     author='Hirotomo Moriwaki',
@@ -35,6 +35,7 @@ setup(
         'six>=1.10',
         'loky>=1.0',
         'Pillow>=4.1'
+        'openpyxl>=2.4',
     ],
 
 )
