@@ -33,11 +33,7 @@ function makeCell(v: number | null, i: number): React.ReactNode {
     }
 
     const fv = Math.round(v * 100) / 100;
-    return (
-        <td key={i}>
-            {fv}
-        </td>
-    );
+    return <td key={i}>{fv}</td>;
 }
 
 function DescriptorTable({ descriptorInfo }: { descriptorInfo: ResultState["descriptorInfo"] }) {
@@ -53,11 +49,7 @@ function DescriptorTable({ descriptorInfo }: { descriptorInfo: ResultState["desc
     const stds: React.ReactNode[] = new Array(N);
 
     descriptorInfo.forEach((v, i) => {
-        names[i] = (
-            <th key={v.index}>
-                {v.name}
-            </th>
-        );
+        names[i] = <th key={v.index}>{v.name}</th>;
         mins[i] = makeCell(v.min, v.index);
         maxs[i] = makeCell(v.max, v.index);
         means[i] = makeCell(v.mean, v.index);
@@ -130,11 +122,7 @@ function DownloadDropdown({
 
 function headerRenderer({ label, dataKey, sortBy, sortDirection, disableSort }: TableHeaderProps) {
     if (disableSort) {
-        return (
-            <div>
-                {label || dataKey}
-            </div>
-        );
+        return <div>{label || dataKey}</div>;
     }
     if (sortBy !== dataKey) {
         return (
@@ -162,11 +150,7 @@ function aggrCellRenderer({ cellData }: TableCellProps) {
 
     const [n, e] = splitNumAndExp(cellData, 4);
     if (e === 0) {
-        return (
-            <div>
-                {n.toPrecision(4)}
-            </div>
-        );
+        return <div>{n.toPrecision(4)}</div>;
     } else {
         return (
             <div>
@@ -188,9 +172,7 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
         <div className="result-page page centered">
             <div className="top-bar">
                 <div>
-                    <h2>
-                        {state.name}
-                    </h2>
+                    <h2>{state.name}</h2>
                 </div>
 
                 <div>
@@ -222,7 +204,7 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
             <div className="result-section">
                 <h5 className="header">Summary</h5>
                 <AutoSizer disableHeight>
-                    {({ width }) =>
+                    {({ width }) => (
                         <Table
                             className="table"
                             height={300}
@@ -253,7 +235,8 @@ function ResultMainView(state: ViewState<ResultState, Action.ResultAction>) {
                             <Column dataKey="max" {...aggrProps} />
                             <Column dataKey="mean" {...aggrProps} />
                             <Column dataKey="std" {...aggrProps} />
-                        </Table>}
+                        </Table>
+                    )}
                 </AutoSizer>
             </div>
 
