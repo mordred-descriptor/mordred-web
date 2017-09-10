@@ -1,8 +1,8 @@
-@import '../node_modules/spectre.css/dist/spectre';
-@import '../node_modules/react-virtualized/styles';
+@import "../node_modules/spectre.css/dist/spectre";
+@import "../node_modules/react-virtualized/styles";
 
 $fa-font-path: "/static/fonts";
-@import '../node_modules/font-awesome/scss/font-awesome';
+@import "../node_modules/font-awesome/scss/font-awesome";
 
 @mixin mobile {
     @media screen and (max-width: 600px) {
@@ -39,7 +39,7 @@ footer {
 
     .ReactVirtualized__Table__headerRow,
     .ReactVirtualized__Table__Grid {
-        border-bottom: .1rem solid #727e96;
+        border-bottom: 0.1rem solid #727e96;
     }
 
     .ReactVirtualized__Table__headerRow {
@@ -49,7 +49,7 @@ footer {
     }
 
     .ReactVirtualized__Table__row {
-        border-bottom: .1rem solid #f0f1f4;
+        border-bottom: 0.1rem solid #f0f1f4;
     }
 
     .data-NA,
@@ -140,11 +140,11 @@ footer {
             width: 3.8rem;
 
             &.mol-nav-left {
-                margin-right: .2rem;
+                margin-right: 0.2rem;
             }
 
             &.mol-nav-right {
-                margin-left: .2rem;
+                margin-left: 0.2rem;
             }
         }
 
@@ -182,7 +182,7 @@ footer {
     }
 
     .jump-field {
-        margin-top: .5rem;
+        margin-top: 0.5rem;
     }
 }
 
@@ -200,12 +200,12 @@ footer {
 
     .name {
         display: flex;
-        margin-right: .5rem;
+        margin-right: 0.5rem;
         align-items: center;
     }
 
     .bar {
-        height: 2.5rem;
+        height: 1.5rem;
     }
 }
 
@@ -256,10 +256,10 @@ footer {
                 display: flex;
                 margin: 0.5rem;
                 .download-label {
-                    width: 20rem;
+                    width: 12rem;
                 }
                 a {
-                    min-width: 4rem;
+                    min-width: 2.5rem;
                 }
             }
         }

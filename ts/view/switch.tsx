@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export function Switch(props: React.ChangeTargetHTMLProps<HTMLInputElement>) {
+export function Switch(props: React.InputHTMLAttributes<HTMLInputElement>) {
     const children = props.children;
 
     return (
