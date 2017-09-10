@@ -61,16 +61,12 @@
         "build:js:bundle": "webpack --output-path $npm_package_config_static/js",
         "build:pug": "pug pug -o $npm_package_config_static",
         "build:sass": "node-sass sass/main.scss -o tmp/css",
-        "build:postcss":
-            "postcss tmp/css/main.css --use autoprefixer --use cssnano --no-map -d $npm_package_config_static/css",
+        "build:postcss": "postcss tmp/css/main.css --use autoprefixer --use cssnano --no-map -d $npm_package_config_static/css",
         "build:font": "cpx node_modules/font-awesome/fonts/\\* $npm_package_config_static/fonts",
-        "watch":
-            "npm-run-all -s build:js:ts -p watch:sass \"build:js:ts -- -w\" \"build:js:bundle -- -w\" \"build:pug -- -w\" \"build:font -- -w\" \"build:postcss -- -w\" server browser-sync",
+        "watch": "npm-run-all -s build:js:ts -p watch:sass \"build:js:ts -- -w\" \"build:js:bundle -- -w\" \"build:pug -- -w\" \"build:font -- -w\" \"build:postcss -- -w\" server browser-sync",
         "watch:sass": "auto-reload-server -i -w sass -j package.json:.scripts.build:sass",
-        "server":
-            "auto-reload-server -i -w ./python/mordred_web -x static -c \"PYTHONPATH=python python -m mordred_web --port $npm_package_config_port --no-browser\"",
-        "browser-sync":
-            "browser-sync start --proxy localhost:$npm_package_config_port --files $npm_package_config_static --port $npm_package_config_devport",
+        "server": "auto-reload-server -i -w ./python/mordred_web -x static -c \"PYTHONPATH=python python -m mordred_web --port $npm_package_config_port --no-browser\"",
+        "browser-sync": "browser-sync start --proxy localhost:$npm_package_config_port --files $npm_package_config_static --port $npm_package_config_devport",
         "clean": "rimraf tmp $npm_package_config_static",
         "copy": "cpx \"$npm_package_config_static/**\" static",
         "production": "NODE_ENV=production run-s build copy"
