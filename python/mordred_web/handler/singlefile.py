@@ -5,11 +5,11 @@ from tornado.web import StaticFileHandler
 
 class SingleFileHandler(StaticFileHandler):
     def initialize(self, path):
-        super(SingleFileHandler, self).initialize(os.path.dirname(path))
-        self.file = os.path.basename(path)
+        dirname, self.filename = os.path.split(path)
+        super(SingleFileHandler, self).initialize(dirname)
 
-    def head(self):
-        return super(SingleFileHandler, self).head(self.file)
+    def head(self, path=None):
+        return super(SingleFileHandler, self).head(self.filename)
 
-    def get(self):
-        return super(SingleFileHandler, self).get(self.file)
+    def get(self, path=None, include_body=True):
+        return super(SingleFileHandler, self).get(self.filename, include_body=include_body)
