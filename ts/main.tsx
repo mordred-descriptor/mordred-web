@@ -56,9 +56,7 @@ function View(state: ViewState<State, Action>) {
             return (
                 <div>
                     <h1>BUG: unknown route</h1>
-                    <p>
-                        {JSON.stringify(route)}
-                    </p>
+                    <p>{JSON.stringify(route)}</p>
                 </div>
             );
     }
@@ -87,7 +85,7 @@ Route.history.listen(location => {
 
 store.dispatch<Action>(Route.routing(Route.history.location));
 
-const AppView = connect(v => v)(View);
+const AppView = connect(v => v)<any>(View);
 
 ReactDOM.render(
     <Provider store={store}>

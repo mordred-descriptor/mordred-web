@@ -125,7 +125,7 @@ export function FileView(props: ViewState<FileState, Action.FileAction>) {
         const parcent = Math.round(ratio * 10000) / 100;
         return (
             <ProgressView
-                title={props.phase === api.PHASE_PENDING ? "Pending" : "Prepareing ..."}
+                title={props.phase === api.PHASE_PENDING ? "Pending" : "Preparing ..."}
                 name={props.name}
                 text={`${parcent}% (${props.progress}/${props.total})`}
                 progress={ratio}
