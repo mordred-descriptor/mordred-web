@@ -4,7 +4,7 @@ How to use mordred Web UI
 Top page
 --
 First, Select preprocessing option from **3**.
-Second, click **2** to Upload sdf/smi file.
+Second, click **2** to Upload sdf/smi file (example file: [smi](examples/example.smi), [sdf](examples/example.sdf)).
 
 ![toppage](./index.png)
 

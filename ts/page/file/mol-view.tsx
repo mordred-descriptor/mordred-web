@@ -53,11 +53,9 @@ export function MolViewer(props: MolProps) {
             <div className="mol-name">
                 <h4 className="text-center">
                     {props.name}{" "}
-                    {props.forcefield
-                        ? <span className="forcefield label">
-                              {props.forcefield}
-                          </span>
-                        : null}
+                    {props.forcefield ? (
+                        <span className="forcefield label">{props.forcefield}</span>
+                    ) : null}
                 </h4>
             </div>
 
