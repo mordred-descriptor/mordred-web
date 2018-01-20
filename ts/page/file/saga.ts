@@ -17,7 +17,7 @@ function* getMolecule() {
     }
 
     try {
-        const blob = yield call(api.getMol, id || "", current);
+        const blob = yield call(is3D ? api.getMol : api.getPNG, id || "", current);
         yield put(Action.MolFetched(current, blob));
     } catch (e) {
         yield put(Action.MolFetched(current, null));
