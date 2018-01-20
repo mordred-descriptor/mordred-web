@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='mordred-web',
-    version='0.3.2',
+    version='0.3.3',
     description='molecular descriptor calculator web UI',
     license='BSD3',
     author='Hirotomo Moriwaki',
