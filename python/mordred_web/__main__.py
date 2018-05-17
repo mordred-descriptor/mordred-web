@@ -1,4 +1,5 @@
 import os
+import sys
 import signal
 import socket
 import argparse
@@ -21,6 +22,7 @@ MEGA = 1024 * 1024
 
 class Shutdown(object):
     def __init__(self, server, ioloop):
+        """Shutdown manager."""
         self.server = server
         self.ioloop = ioloop
 
@@ -28,12 +30,15 @@ class Shutdown(object):
         print("catch signal: {}".format(sig))  # noqa: T003
         self.server.stop()
         self.ioloop.stop()
+        print("terminate...")  # noqa: T003
+        sys.exit(0)
 
 
 class MyApplication(tornado.web.Application):
     def __init__(self, queue, conn, file_size_limit, molecule_limit,
                  parse_timeout, prepare_timeout, calc_timeout, *args,
                  **kwargs):
+        """Application."""
         super(MyApplication, self).__init__(*args, **kwargs)
         self.queue = queue
         self.db = conn
@@ -117,7 +122,6 @@ def serve(port,
         signal.signal(signal.SIGINT, Shutdown(server, ioloop))
         print("start mordred.web on {}".format(url))  # noqa: T003
         ioloop.start()
-        print("terminate...")  # noqa: T003
 
 
 def main():
@@ -130,42 +134,42 @@ def main():
         metavar="MB",
         type=int,
         default=5,
-        help="upload file size limit", )
+        help="upload file size limit")
     parser.add_argument(
         "--molecule-limit",
         metavar="N",
         type=int,
         default=None,
-        help="number of molecule limit", )
+        help="number of molecule limit")
     parser.add_argument(
         "--parse-timeout",
         metavar="SEC",
         type=int,
         default=None,
-        help="file parse timeout", )
+        help="file parse timeout")
     parser.add_argument(
         "--prepare-timeout",
         metavar="SEC",
         type=int,
         default=None,
-        help="molecular preparation timeout", )
+        help="molecular preparation timeout")
     parser.add_argument(
         "--calc-timeout",
         metavar="SEC",
         type=int,
         default=None,
-        help="descriptor calculation timeout", )
+        help="descriptor calculation timeout")
     parser.add_argument(
         "--db",
         metavar="FILE",
         type=str,
         default="mordred-web.sqlite",
-        help="database file path", )
+        help="database file path")
     parser.add_argument(
         "--no-browser",
         action="store_true",
         default=False,
-        help="don't open browser automatically", )
+        help="don't open browser automatically")
     result = (parser.parse_args())
     serve(**vars(result))
 
