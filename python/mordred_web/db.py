@@ -8,7 +8,7 @@ from rdkit import Chem
 
 
 def issue_text_id():
-    return base58.b58encode(uuid.uuid4().bytes)
+    return base58.b58encode(uuid.uuid4().bytes).decode()
 
 
 @contextmanager
