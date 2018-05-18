@@ -9,13 +9,23 @@ export interface MolViewerProps {
 }
 
 export class MolViewer extends React.Component<MolViewerProps, {}> {
-    private stage: ngl.Stage;
-    private view: Element;
+    private stage?: ngl.Stage;
+    private view?: Element;
     private width: number;
     private height: number;
     private callback: () => void;
 
+    constructor(props: MolViewerProps) {
+        super(props);
+        this.width = 0;
+        this.height = 0;
+        this.callback = () => {};
+    }
+
     public handleResize(): void {
+        if (!this.view || !this.stage) {
+            throw "MolViewer: handleResize called before mounting component";
+        }
         const newHeight = this.view.clientHeight;
         const newWidth = this.view.clientWidth;
         if (this.height === newHeight && this.width === newWidth) {
@@ -36,6 +46,10 @@ export class MolViewer extends React.Component<MolViewerProps, {}> {
     }
 
     public componentWillUpdate(nextProps: MolViewerProps, nextState: any) {
+        if (!this.view || !this.stage) {
+            throw "MolViewer: componentWillUpdate called before mounting component";
+        }
+
         if (this.props.src === nextProps.src) {
             return;
         }
@@ -46,6 +60,9 @@ export class MolViewer extends React.Component<MolViewerProps, {}> {
             this.stage
                 .loadFile<ngl.StructureComponent>(nextProps.src, nextProps.loaderParams || {})
                 .then(comp => {
+                    if (!this.stage) {
+                        throw "MolViewer: componentWillUpdate called before mounting component";
+                    }
                     comp.addRepresentation("ball+stick", {});
                     this.stage.autoView(0);
                 });
