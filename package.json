@@ -17,7 +17,7 @@
         "@types/react-virtualized": "~9.18.3",
         "@types/redux-logger": "~3.0.0",
         "autoprefixer": "~8.5.0",
-        "axios": "~0.18.0",
+        "axios": "~0.21.1",
         "browser-sync": "~2.24.4",
         "classnames": "~2.2.5",
         "cpx": "~1.5.0",
