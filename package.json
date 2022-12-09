@@ -33,7 +33,7 @@
         "postcss-cli": "~5.0.0",
         "prettier": "~1.12.1",
         "pug-cli": "~1.0.0-alpha6",
-        "qs": "~6.5.0",
+        "qs": "~6.5.3",
         "react": "~16.3.2",
         "react-dom": "~16.3.2",
         "react-onclickoutside": "~6.7.1",
